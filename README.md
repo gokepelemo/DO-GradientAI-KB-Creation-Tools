@@ -1,4 +1,4 @@
-# Knowledgebase Creation Tools for DigitalOcean GenAI Platform
+# Knowledgebase Creation Tools
 
 This repository contains tools to create knowledge bases for the DigitalOcean GenAI platform.
 
