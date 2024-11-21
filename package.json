@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.693.0",
+    "@aws-sdk/credential-provider-env": "^3.693.0",
+    "aws-sdk": "^2.1692.0",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "intercom-client": "^5.0.0",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^23.8.0",
+    "turndown": "^7.2.0"
+  },
+  "type": "module"
+}
