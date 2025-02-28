@@ -9,7 +9,7 @@ This repository contains tools to create knowledge bases for the DigitalOcean Ge
 
 ## Tools
 
-- processDoc.js can be used to extract an HTML element from a web page. It uses the query selector method, which will select the first element on the DOM if there are multiple elements that match the selector. It extracts the inner text of the element, without its HTML tags and adds the extracted text to a DigitalOcean Spaces bucket for use in a DO GenAI knowledge base.
+- processDoc.js can be used to extract an HTML element from a web page. It uses the query selector method which will select the first element on the DOM if there are multiple elements that match the selector. It extracts the inner text of the element without its HTML tags, and adds the extracted text to a DigitalOcean Spaces bucket for use in a DO GenAI knowledge base.
   - Usage: `./modules/processDoc.js <url> <selector> <selector type: id/class/html tag>`
 - processDocs.js can be used to extract an HTML element from multiple similar web pages using the query selector method. Using processDoc.js, it loops through a txt file containing a list of links and adds each processed document to a Spaces bucket.
   - Usage: `./sources/processDocs.js <file> <selector> <selector type: id/class/html tag> <spaces bucket>` 
