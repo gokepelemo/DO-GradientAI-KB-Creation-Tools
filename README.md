@@ -17,7 +17,7 @@ This repository contains tools to create knowledge bases for the DigitalOcean Ge
   - Usage: `./sources/stackoverflow.js <search term> <spaces bucket name>`
 - reddit.js can be used to extract posts from a reddit search query. It uses the Reddit API to extract the post title and post body. It extracts the title and body text, converts to markdown, extracts the comments sorted by votes, and adds each extracted post as an object to a DigitalOcean Spaces bucket for use in a knowledge base. Excludes known job posting subreddits.
   - Usage: `./sources/reddit.js <search term> <number of comments> <spaces bucket name>`
-- parseSitemap.js can be used to extract URLs from a sitemap.xml file to a txt file that can be processed by ./process-docs.sh. It uses the sitemap.xml file to extract the URLs of all the pages on a website.
+- parseSitemap.js can be used to extract URLs from a sitemap.xml file to a txt file that can be processed by ./processDocs.js. It uses the sitemap.xml file to extract the URLs of all the pages on a website.
   - Usage: `./urls/parseSitemap.js <sitemap.xml file or url> <regex> <output.txt file>`
 - extractLinks.js can be used to extract URLs from an HTML element, like a navigation bar from a page, to a text file that can then be used with processDocs.js for crawling HTML pages and adding them to a Spaces bucket for use with a Knowledgebase.
   - Usage: `./urls/extractLinks.js <url> <selector> <selector type: id, class, or tag>  <output.txt>`
