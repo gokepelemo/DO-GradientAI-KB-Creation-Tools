@@ -5,8 +5,11 @@ import { uploadBuffer } from './uploadToSpaces.js';
 import { URL } from 'url';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
+import TurndownService from 'turndown';
 
 dotenv.config();
+
+const turndownService = new TurndownService();
 
 if (process.argv.length < 5) {
   console.log(chalk.yellow(
@@ -41,11 +44,11 @@ const processDoc = async (url, selector, selectorType, bucket) => {
   // Evaluates an HTML element and extracts the text
   const articleText = await page.evaluate((element) => {
     const article = document.querySelector(element);
-    return article ? article.innerText : "No article element found";
+    return article ? article.innerHTML : "No article element found";
   }, constructedSelector);
 
   const pageTitle = await page.title();
-  const fullText = `${articleText}\nURL: ${url}\nTitle: ${pageTitle}`;
+  const fullText = "URL:"+ url + "\n\n#"+pageTitle+"\n\n"+turndownService.turndown(articleText);
 
   // Create a buffer from the extracted text
   const buffer = Buffer.from(fullText, 'utf-8');

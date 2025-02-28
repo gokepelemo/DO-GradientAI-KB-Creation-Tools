@@ -8,6 +8,7 @@
     "fs": "^0.0.1-security",
     "intercom-client": "^5.0.0",
     "node-fetch": "^3.3.2",
+    "ora": "^8.1.1",
     "puppeteer": "^23.8.0",
     "turndown": "^7.2.0"
   },
