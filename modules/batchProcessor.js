@@ -310,6 +310,35 @@ export async function processBatch(configPath, dryRun = false) {
       }
     }
 
+    // Process LLMs.txt files
+    if (config.llms && config.llms.length > 0) {
+      console.log(chalk.blue('\n🤖 Processing LLMs.txt files...'));
+      const { processLLMsTxt } = await import('./llmsProcessor.js');
+      for (const llms of config.llms) {
+        try {
+          const result = await processLLMsTxt(llms.url, llms.outputFile, llms.bucket || config.defaultBucket, dryRun);
+          results.processed.push({
+            type: 'llms',
+            url: llms.url,
+            outputFile: llms.outputFile,
+            bucket: llms.bucket || config.defaultBucket,
+            source: result.source,
+            urlsProcessed: result.urlsProcessed,
+            contentLength: result.contentLength,
+            uploaded: result.uploaded
+          });
+        } catch (error) {
+          results.failed.push({
+            type: 'llms',
+            url: llms.url,
+            outputFile: llms.outputFile,
+            bucket: llms.bucket || config.defaultBucket,
+            error: error.message
+          });
+        }
+      }
+    }
+
     // Process RSS feeds
     if (config.rss && config.rss.length > 0) {
       console.log(chalk.blue('\n📰 Processing RSS feeds...'));

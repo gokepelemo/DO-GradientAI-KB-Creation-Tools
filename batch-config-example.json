@@ -71,6 +71,13 @@
       "outputFile": "stackoverflow-questions.md"
     }
   ],
+  "llms": [
+    {
+      "url": "https://docs.gradientai.com",
+      "outputFile": "llms-content.md",
+      "bucket": "gradientai-docs"
+    }
+  ],
   "rss": [
     {
       "feedUrl": "https://blog.gradientai.com/rss.xml",

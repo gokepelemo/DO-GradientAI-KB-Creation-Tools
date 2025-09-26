@@ -605,6 +605,13 @@ Create a JSON file with the following structure:
       "outputFile": "stackoverflow.md"
     }
   ],
+  "llms": [
+    {
+      "url": "https://example.com",
+      "outputFile": "llms-content.md",
+      "bucket": "optional-bucket"
+    }
+  ],
   "rss": [
     {
       "feedUrl": "https://example.com/feed.xml",
