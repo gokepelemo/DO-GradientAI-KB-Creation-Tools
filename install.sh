@@ -28,40 +28,35 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Check if running on macOS for Homebrew
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    print_info "macOS detected. Checking for Homebrew..."
+#!/bin/bash
 
-    if command -v brew &> /dev/null; then
-        print_success "Homebrew found! Installing via Homebrew (recommended)..."
+# Install script for KB Creation Tools CLI
 
-        # Check if formula exists in local tap
-        if brew tap | grep -q "gokepelemo/kb-tools"; then
-            print_info "Updating existing tap..."
-            brew update
-        else
-            print_info "Adding tap: gokepelemo/kb-tools"
-            brew tap gokepelemo/kb-tools
-        fi
+set -e
 
-        brew install kb-tools
-        print_success "Installation complete!"
-        echo ""
-        echo "Usage:"
-        echo "  kb --help                    # Show help"
-        echo "  kb github <owner> <repo>     # Crawl GitHub repo"
-        echo "  kb reddit <query>           # Search Reddit"
-        echo "  kb stackoverflow <query>    # Search Stack Overflow"
-        echo ""
-        echo "All commands support --dry-run for testing"
-        exit 0
-    else
-        print_warning "Homebrew not found. Falling back to npm installation."
-    fi
-fi
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Fallback to npm installation
-print_info "Installing via npm..."
+# Print colored output
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
 
 # Check if npm is available
 if ! command -v npm &> /dev/null; then
@@ -91,18 +86,18 @@ npm link
 print_success "Installation complete!"
 echo ""
 echo "Available commands:"
-echo "  kb --help                    # Show help"
-echo "  kb github <owner> <repo>     # Crawl GitHub repository"
-echo "  kb reddit <query>           # Search Reddit posts"
-echo "  kb stackoverflow <query>    # Search Stack Overflow"
-echo "  kb intercom                  # Fetch Intercom articles"
-echo "  kb processdoc <url>         # Process single webpage"
-echo "  kb processurls <file>       # Process URLs from file"
-echo "  kb extractlinks <url>       # Extract links from webpage"
-echo "  kb docprocessor <file>      # Process local documents"
-echo "  kb batchprocess <config>    # Process multiple sources"
+echo "  kbcreationtools --help                    # Show help"
+echo "  kbcreationtools github <owner> <repo>     # Crawl GitHub repository"
+echo "  kbcreationtools reddit <query>           # Search Reddit posts"
+echo "  kbcreationtools stackoverflow <query>    # Search Stack Overflow"
+echo "  kbcreationtools intercom                  # Fetch Intercom articles"
+echo "  kbcreationtools processdoc <url>         # Process single webpage"
+echo "  kbcreationtools processurls <file>       # Process URLs from file"
+echo "  kbcreationtools extractlinks <url>       # Extract links from webpage"
+echo "  kbcreationtools docprocessor <file>      # Process local documents"
+echo "  kbcreationtools batchprocess <config>    # Process multiple sources"
 echo ""
 echo "All upload commands support optional [bucket] parameter"
 echo "Use --dry-run flag to test without uploading"
 echo ""
-echo "For more information: kb --help"
+echo "For more information: kbcreationtools --help"

@@ -47,41 +47,41 @@ node setup-dev.js
 
 ```bash
 # Show help
-kb --help
+kbcreationtools --help
 
 # Crawl a GitHub repository
-kb github microsoft vscode
+kbcreationtools github microsoft vscode
 
 # Search Stack Overflow
-kb stackoverflow "javascript promises"
+kbcreationtools stackoverflow "javascript promises"
 
 # Search Reddit posts
-kb reddit "web development"
+kbcreationtools reddit "web development"
 
 # Process a single webpage
-kb processdoc https://example.com/docs
+kbcreationtools processdoc https://example.com/docs
 
 # Process local documents
-kb docprocessor my-document.pdf
+kbcreationtools docprocessor my-document.pdf
 
 # Extract links from a webpage
-kb extractlinks https://example.com output.txt
+kbcreationtools extractlinks https://example.com output.txt
 ```
 
 ### Advanced Usage
 
 ```bash
 # Dry run (no uploads)
-kb github microsoft vscode --dry-run
+kbcreationtools github microsoft vscode --dry-run
 
 # Custom bucket
-kb github microsoft vscode my-custom-bucket
+kbcreationtools github microsoft vscode my-custom-bucket
 
 # Batch processing
-kb batchprocess config.json
+kbcreationtools batchprocess config.json
 
 # Process LLMs.txt site
-kb processllms https://example.com/llms.txt docs.json
+kbcreationtools processllms https://example.com/llms.txt docs.json
 ```
 
 ### Environment Setup
@@ -90,13 +90,13 @@ The CLI will automatically prompt for required API keys on first use:
 
 ```bash
 # First run will prompt for GitHub token
-kb github microsoft vscode
+kbcreationtools github microsoft vscode
 
 # Will prompt for Reddit credentials
-kb reddit "javascript"
+kbcreationtools reddit "javascript"
 
 # Will prompt for Intercom token
-kb intercom
+kbcreationtools intercom
 ```
 
 Or configure manually in `.env`:
@@ -144,7 +144,7 @@ Add to GitHub Actions:
 - name: Generate Knowledge Base
   run: |
     npm install -g @gokepelemo/kb-tools
-    kb github ${{ github.repository }} --dry-run
+    kbcreationtools github ${{ github.repository }} --dry-run
 ```
 
 ### Shell Aliases
@@ -153,10 +153,10 @@ Add to your `~/.zshrc` or `~/.bashrc`:
 
 ```bash
 # Quick KB commands
-alias kb-gh='kb github'
-alias kb-so='kb stackoverflow'
-alias kb-rd='kb reddit'
-alias kb-docs='kb processdoc'
+alias kb-gh='kbcreationtools github'
+alias kb-so='kbcreationtools stackoverflow'
+alias kb-rd='kbcreationtools reddit'
+alias kb-docs='kbcreationtools processdoc'
 ```
 
 ## �️ Developer Tools & Automation
@@ -235,27 +235,27 @@ The project includes GitHub Actions for automated testing and releases:
 
 | Command | Description | Requirements |
 |---------|-------------|--------------|
-| `kb github <owner> <repo>` | Crawl GitHub repository | GitHub token |
-| `kb stackoverflow <query>` | Search Stack Overflow | None (API key optional) |
-| `kb reddit <query>` | Search Reddit posts | Reddit API credentials |
-| `kb intercom` | Fetch Intercom articles | Intercom access token |
+| `kbcreationtools github <owner> <repo>` | Crawl GitHub repository | GitHub token |
+| `kbcreationtools stackoverflow <query>` | Search Stack Overflow | None (API key optional) |
+| `kbcreationtools reddit <query>` | Search Reddit posts | Reddit API credentials |
+| `kbcreationtools intercom` | Fetch Intercom articles | Intercom access token |
 
 ### Content Processing
 
 | Command | Description | Requirements |
 |---------|-------------|--------------|
-| `kb processdoc <url>` | Process single webpage | None |
-| `kb processurls <file>` | Process URLs from file | None |
-| `kb extractlinks <url> <output>` | Extract links from webpage | None |
-| `kb docprocessor <file>` | Process local documents | None |
-| `kb processllms <url> <output>` | Process LLMs.txt sites | None |
+| `kbcreationtools processdoc <url>` | Process single webpage | None |
+| `kbcreationtools processurls <file>` | Process URLs from file | None |
+| `kbcreationtools extractlinks <url> <output>` | Extract links from webpage | None |
+| `kbcreationtools docprocessor <file>` | Process local documents | None |
+| `kbcreationtools processllms <url> <output>` | Process LLMs.txt sites | None |
 
 ### Workflow Commands
 
 | Command | Description |
 |---------|-------------|
-| `kb batchprocess <config>` | Process multiple sources |
-| `kb pipestdin <output>` | Process piped input |
+| `kbcreationtools batchprocess <config>` | Process multiple sources |
+| `kbcreationtools pipestdin <output>` | Process piped input |
 
 ### Global Options
 
@@ -271,7 +271,7 @@ The project includes GitHub Actions for automated testing and releases:
 Commands that upload data support an optional `[bucket]` parameter:
 
 ```bash
-kb github microsoft vscode my-bucket
+kbcreationtools github microsoft vscode my-bucket
 ```
 
 Priority order:
@@ -331,13 +331,13 @@ GPL-2.0 - See [LICENSE](LICENSE) file for details.
 
 ```bash
 # Show detailed help
-kb --help
+kbcreationtools --help
 
 # Command-specific help
-kb github --help
+kbcreationtools github --help
 
 # Verbose logging
-kb github microsoft vscode --verbose
+kbcreationtools github microsoft vscode --verbose
 ```
 - Bucket parameter is the **last argument** in all commands where supported
 
