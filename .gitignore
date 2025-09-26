@@ -72,6 +72,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Release script
+release.sh
+
 # Test files
 test-results/
 junit.xml
