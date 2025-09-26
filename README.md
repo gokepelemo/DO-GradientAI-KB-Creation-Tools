@@ -422,7 +422,7 @@ STACKOVERFLOW_API_KEY=your_stackoverflow_key
 
 ### Batch Configuration
 
-See `batch-config-example.json` for a complete configuration example with all supported options.
+See [`batch-config-example.json`](https://raw.githubusercontent.com/gokepelemo/DO-GradientAI-KB-Creation-Tools/main/batch-config-example.json) for a complete configuration example with all supported options.
 
 ## 🧪 **Testing**
 
@@ -648,7 +648,7 @@ kbcreationtools batchprocess my-batch-config.json
 kbcreationtools batchprocess my-batch-config.json --dry-run
 ```
 
-See `batch-config-example.json` for a complete example configuration.
+See [`batch-config-example.json`](https://raw.githubusercontent.com/gokepelemo/DO-GradientAI-KB-Creation-Tools/main/batch-config-example.json) for a complete example configuration.
 
 ## Tools
 
