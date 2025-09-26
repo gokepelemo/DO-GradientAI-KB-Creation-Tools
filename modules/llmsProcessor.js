@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { createPage, navigateWithTimeout, checkUrlExists } from '../modules/browser.js';
+import { createPage, navigateWithTimeout, checkUrlExists, closeBrowser } from '../modules/browser.js';
 import { processDoc } from '../modules/processDoc.js';
 import { uploadBuffer } from '../modules/uploadToSpaces.js';
 import { getBucketName } from '../modules/validation.js';
@@ -99,7 +99,15 @@ export async function processLLMsTxt(baseUrl, outputFile, bucket, dryRun = false
     spinner.text = 'No LLMs files found, processing provided URL content...';
     const isMarkdown = outputFile.toLowerCase().endsWith('.md');
     const page3 = await createPage();
-    await navigateWithTimeout(page3, normalizedUrl);
+    
+    // Use domcontentloaded instead of networkidle2 to avoid hanging on sites with ongoing connections
+    try {
+      await page3.goto(normalizedUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    } catch (error) {
+      await page3.close();
+      throw new Error(`Failed to load URL ${normalizedUrl}: ${error.message}`);
+    }
+    
     const bodyContent = await page3.evaluate(() => document.body.innerText);
     await page3.close();
 
@@ -112,10 +120,17 @@ export async function processLLMsTxt(baseUrl, outputFile, bucket, dryRun = false
     if (isMarkdown) {
       const turndownService = new TurndownService();
       const htmlPage = await createPage();
-      await navigateWithTimeout(htmlPage, normalizedUrl);
-      const htmlContent = await htmlPage.evaluate(() => document.body.innerHTML);
-      await htmlPage.close();
-      finalContent = turndownService.turndown(htmlContent);
+      
+      try {
+        await htmlPage.goto(normalizedUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        const htmlContent = await htmlPage.evaluate(() => document.body.innerHTML);
+        finalContent = turndownService.turndown(htmlContent);
+      } catch (error) {
+        // If HTML conversion fails, fall back to plain text
+        console.warn(`Failed to convert to markdown, using plain text: ${error.message}`);
+      } finally {
+        await htmlPage.close();
+      }
     }
 
     if (dryRun) {
@@ -132,6 +147,14 @@ export async function processLLMsTxt(baseUrl, outputFile, bucket, dryRun = false
   } catch (error) {
     spinner.fail(`Failed to process LLMs content: ${error.message}`);
     throw error;
+  } finally {
+    // Ensure browser is closed to prevent CLI hanging
+    try {
+      await closeBrowser();
+    } catch (browserError) {
+      // Ignore browser cleanup errors
+      console.warn('Warning: Failed to close browser:', browserError.message);
+    }
   }
 }
 
