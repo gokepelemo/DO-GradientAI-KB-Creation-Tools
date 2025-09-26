@@ -1,0 +1,80 @@
+{
+  "defaultBucket": "gradientai-knowledge-base",
+  "documents": [
+    {
+      "file": "sample-docs/guide.pdf",
+      "bucket": "gradientai-docs"
+    },
+    {
+      "file": "sample-docs/api-reference.docx"
+    },
+    {
+      "file": "sample-docs/changelog.md"
+    }
+  ],
+  "webPages": [
+    {
+      "url": "https://docs.gradientai.com/introduction",
+      "selector": "main",
+      "bucket": "gradientai-docs"
+    },
+    {
+      "url": "https://docs.gradientai.com/api-reference",
+      "selector": ".content"
+    }
+  ],
+  "linkExtraction": [
+    {
+      "url": "https://docs.gradientai.com",
+      "selector": "nav a",
+      "outputFile": "extracted-links.txt",
+      "processDocs": {
+        "selector": "main",
+        "bucket": "gradientai-docs"
+      }
+    }
+  ],
+  "sitemaps": [
+    {
+      "source": "https://docs.gradientai.com/sitemap.xml",
+      "outputFile": "sitemap-urls.txt",
+      "processDocs": {
+        "selector": "main",
+        "bucket": "gradientai-docs"
+      }
+    }
+  ],
+  "github": [
+    {
+      "owner": "gradientai",
+      "repo": "platform",
+      "outputFile": "github-platform.md"
+    }
+  ],
+  "intercom": [
+    {
+      "bucket": "gradientai-support",
+      "outputFile": "intercom-articles.md"
+    }
+  ],
+  "reddit": [
+    {
+      "query": "gradientai",
+      "bucket": "gradientai-community",
+      "outputFile": "reddit-discussions.md"
+    }
+  ],
+  "stackoverflow": [
+    {
+      "searchTerm": "gradientai",
+      "bucket": "gradientai-questions",
+      "outputFile": "stackoverflow-questions.md"
+    }
+  ],
+  "rss": [
+    {
+      "feedUrl": "https://blog.gradientai.com/rss.xml",
+      "outputFile": "blog-posts.md"
+    }
+  ]
+}

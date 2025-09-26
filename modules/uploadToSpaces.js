@@ -29,7 +29,7 @@ async function uploadBuffer(bucketName, buffer, key) {
     return data;
   } catch (error) {
     console.error(chalk.red("Error uploading file:", key, error));
-    process.exit(1);
+    throw error;
   }
 }
 
@@ -42,8 +42,15 @@ async function uploadFile(bucketName, filePath, key) {
     return await uploadBuffer(bucketName, fileBuffer, key);
   } catch (error) {
     console.error(chalk.red("Error uploading file:", error));
-    process.exit(1);
+    throw error;
   }
 }
 
-export { uploadBuffer, uploadFile };
+// Function to upload a string content to DigitalOcean Spaces
+async function uploadToSpaces(key, content) {
+  const bucketName = process.env.SPACES_BUCKET;
+  const buffer = Buffer.from(content, 'utf-8');
+  return await uploadBuffer(bucketName, buffer, key);
+}
+
+export { uploadBuffer, uploadFile, uploadToSpaces };

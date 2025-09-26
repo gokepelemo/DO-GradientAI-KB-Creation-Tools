@@ -3,9 +3,10 @@
 import { URL, URLSearchParams } from 'url';
 import TurndownService from 'turndown';
 import { uploadBuffer } from '../modules/uploadToSpaces.js';
-import { Buffer } from 'buffer';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
+import ora from 'ora';
+import { config } from '../modules/config.js';
 
 dotenv.config();
 
@@ -16,11 +17,12 @@ const fetchAccessToken = async () => {
   const clientSecret = process.env.REDDIT_CLIENT_SECRET;
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+  const response = await fetch(config.APIs.REDDIT_ACCESS_TOKEN, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': config.USER_AGENT,
     },
     body: new URLSearchParams({ grant_type: 'client_credentials' })
   });
@@ -41,7 +43,7 @@ const fetchAllPages = async (url, accessToken) => {
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'User-Agent': 'KnowledgebaseCreationTools/0.1.0'
+        'User-Agent': config.USER_AGENT
       }
     });
 
@@ -58,20 +60,22 @@ const fetchAllPages = async (url, accessToken) => {
 };
 
 const searchReddit = async (query, accessToken) => {
-  const url = new URL('https://oauth.reddit.com/search');
+  const url = new URL(`${config.APIs.REDDIT_OAUTH}/search`);
   url.searchParams.append('q', query);
   url.searchParams.append('limit', '100');
 
   const results = await fetchAllPages(url, accessToken);
-  return results.filter(item => item.selftext && item.selftext.length > 0 && item.subreddit !== 'jobboardsearch');
+  const jobSubreddits = ['jobboardsearch', 'jobs', 'forhire', 'jobsearch', 'careers'];
+  return results.filter(item => item.selftext && item.selftext.length > 0 && !jobSubreddits.includes(item.subreddit));
 };
 
 const fetchTopComments = async (postId, subreddit, accessToken) => {
-  const url = new URL(`https://oauth.reddit.com/r/${subreddit}/comments/${postId}`);
+  const url = new URL(`${config.APIs.REDDIT_OAUTH}/r/${subreddit}/comments/${postId}`);
+  url.searchParams.append('sort', 'top');
   const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
-      'User-Agent': 'KnowledgebaseCreationTools/0.1.0'
+      'User-Agent': config.USER_AGENT
     }
   });
 
@@ -83,9 +87,14 @@ const fetchTopComments = async (postId, subreddit, accessToken) => {
   return data[1].data.children.map(comment => comment.data);
 };
 
-const processRedditPosts = async (query, bucket) => {
+const processRedditPosts = async (query, bucket, dryRun = false) => {
+  const tokenSpinner = ora('Fetching Reddit access token...').start();
   const accessToken = await fetchAccessToken();
+  tokenSpinner.succeed('Access token obtained');
+
+  const searchSpinner = ora(`Searching Reddit for "${query}"...`).start();
   const results = await searchReddit(query, accessToken);
+  searchSpinner.succeed(`Found ${results.length} posts`);
 
   for (const post of results) {
     let postObject = `Title: ${post.title}\n`;
@@ -94,7 +103,10 @@ const processRedditPosts = async (query, bucket) => {
     postObject += `Subreddit: ${post.subreddit}\n`;
     postObject += `Content: ${postMarkdown}\n`;
 
+    const commentSpinner = ora(`Fetching comments for post: ${post.title}...`).start();
     const topComments = await fetchTopComments(post.id, post.subreddit, accessToken);
+    commentSpinner.succeed(`Fetched ${topComments.length} comments`);
+
     let commentNumber = 1;
     for (const comment of topComments) {
       if (!comment.body) {
@@ -104,25 +116,36 @@ const processRedditPosts = async (query, bucket) => {
       commentNumber++;
     }
 
-    await uploadBuffer(
-      bucket ? bucket : process.env.BUCKET_NAME,
-      Buffer.from(postObject, 'utf-8'),
-      `${post.subreddit}-${post.id}.md`
-    );
-    console.log(chalk.green(`Processed and uploaded content from post: ${post.title}`));
+    const uploadSpinner = ora(`Uploading post: ${post.title}...`).start();
+    if (dryRun) {
+      console.log(chalk.blue(`[DRY RUN] Would upload ${post.title} to bucket ${bucket ? bucket : process.env.BUCKET_NAME}`));
+      uploadSpinner.succeed(`Simulated upload of ${post.title}`);
+    } else {
+      await uploadBuffer(
+        bucket ? bucket : process.env.BUCKET_NAME,
+        Buffer.from(postObject, 'utf-8'),
+        `${post.subreddit}-${post.id}.md`
+      );
+      uploadSpinner.succeed(`Uploaded ${post.title}`);
+    }
+    console.log(chalk.green(`Processed content from post: ${post.title}`));
   }
 };
 
-if (import.meta.url === new URL(import.meta.url).href) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.argv.length < 3) {
-    console.log("Usage: ./reddit.js <query> [bucket]");
+    console.log("Usage: ./reddit.js <query> [bucket] [--dry-run]");
     process.exit(1);
   }
 
-  const query = process.argv[2];
-  const bucket = process.argv[3];
+  const args = process.argv.slice(2);
+  const dryRun = args.includes('--dry-run');
+  const filteredArgs = args.filter(arg => arg !== '--dry-run');
 
-  processRedditPosts(query, bucket)
+  const query = filteredArgs[0];
+  const bucket = filteredArgs[1];
+
+  processRedditPosts(query, bucket, dryRun)
     .then(() => console.log(chalk.green("Content extracted and uploaded successfully")))
     .catch((error) => {
       console.error(chalk.red("Error:", error));

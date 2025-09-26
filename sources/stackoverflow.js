@@ -5,6 +5,8 @@ import TurndownService from "turndown";
 import { uploadBuffer } from "../modules/uploadToSpaces.js";
 import chalk from 'chalk';
 import dotenv from 'dotenv';
+import ora from 'ora';
+import { config } from '../modules/config.js';
 
 dotenv.config();
 const turndownService = new TurndownService();
@@ -22,7 +24,11 @@ async function fetchAllPages(url) {
       url.searchParams.set("key", process.env.STACKOVERFLOW_API_KEY);
     }
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': config.USER_AGENT
+        }
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }
@@ -39,65 +45,128 @@ async function fetchAllPages(url) {
   return allItems;
 }
 
-const searchStackOverflow = async (query) => {
-  const url = new URL('https://api.stackexchange.com/2.3/search/advanced');
+const searchStackOverflow = async (query, bucket, dryRun = false) => {
+  const url = new URL(`${config.APIs.STACKOVERFLOW}/search/advanced`);
   url.searchParams.append('order', 'desc');
   url.searchParams.append('sort', 'activity');
   url.searchParams.append('q', query);
   url.searchParams.append('site', 'stackoverflow');
   url.searchParams.append('filter', 'withbody');
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': config.USER_AGENT
+    }
+  });
   if (!response.ok) {
     throw new Error(`Error: ${response.statusText}`);
   }
 
   const data = await response.json();
-  return data.items;
-};
+  const results = data.items;
 
-const fetchAnswerContent = async (questionId) => {
-  const url = new URL(`https://api.stackexchange.com/2.3/questions/${questionId}/answers`);
-  url.searchParams.append('order', 'desc');
-  url.searchParams.append('sort', 'activity');
-  url.searchParams.append('site', 'stackoverflow');
-  url.searchParams.append('filter', 'withbody');
+  const searchSpinner = ora(`Searching Stack Overflow for "${query}"...`).start();
+  searchSpinner.succeed(`Found ${results.length} questions`);
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Error: ${response.statusText}`);
-  }
+  for (const question of results) {
+    let questionObject = `Question: ${question.title}\n`;
+    const questionMarkdown = turndownService.turndown(question.body);
+    questionObject += `Content: ${questionMarkdown}\n`;
 
-  const data = await response.json();
-  return data.items;
-};
+    const answerSpinner = ora(`Fetching answers for question: ${question.title}...`).start();
+    const answers = await fetchAnswerContent(question.question_id);
+    answerSpinner.succeed(`Fetched ${answers.length} answers`);
 
-(async () => {
-  if (process.argv.length < 3) {
-    console.log("Usage: ./stackoverflow.js <query> [bucket]");
-    process.exit(1);
-  }
+    if (answers.length > 0) {
+      const answer = answers[0];
+      const answerMarkdown = turndownService.turndown(answer.body);
+      questionObject += `Answer: ${answerMarkdown}\n`;
+    }
 
-  const query = process.argv[2];
-  const bucket = process.argv[3] || process.env.SPACES_BUCKET || process.env.BUCKET_NAME;
-
-  try {
-    const results = await searchStackOverflow(query);
-    for (const question of results) {
-      let questionObject = `Question: ${question.title}\n`;
-      const questionMarkdown = turndownService.turndown(question.body);
-      questionObject += `Content: ${questionMarkdown}\n`;
-      const answers = await fetchAnswerContent(question.question_id);
-      for (const answer of answers) {
-        const answerMarkdown = turndownService.turndown(answer.body);
-        questionObject += `Answer: ${answerMarkdown}\n`;
-      }
+    const uploadSpinner = ora(`Uploading question: ${question.title}...`).start();
+    if (dryRun) {
+      console.log(chalk.blue(`[DRY RUN] Would upload ${question.title} to bucket ${bucket}`));
+      uploadSpinner.succeed(`Simulated upload of ${question.title}`);
+    } else {
       await uploadBuffer(
         bucket,
         Buffer.from(questionObject, "utf-8"),
         `${question.question_id}.md`
       );
-      console.log(chalk.green(`Processed and uploaded content from question: ${question.title}`));
+      uploadSpinner.succeed(`Uploaded ${question.title}`);
+    }
+    console.log(chalk.green(`Processed content from question: ${question.title}`));
+  }
+  console.log(chalk.green("All questions processed and uploaded successfully"));
+};
+
+const fetchAnswerContent = async (questionId) => {
+  const url = new URL(`${config.APIs.STACKOVERFLOW}/questions/${questionId}/answers`);
+  url.searchParams.append('order', 'desc');
+  url.searchParams.append('sort', 'votes');
+  url.searchParams.append('site', 'stackoverflow');
+  url.searchParams.append('filter', 'withbody');
+
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': config.USER_AGENT
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.items;
+};
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  (async () => {
+    if (process.argv.length < 3) {
+      console.log("Usage: ./stackoverflow.js <query> [bucket] [--dry-run]");
+      process.exit(1);
+    }
+
+    const args = process.argv.slice(2);
+    const dryRun = args.includes('--dry-run');
+    const filteredArgs = args.filter(arg => arg !== '--dry-run');
+
+    const query = filteredArgs[0];
+    const bucket = filteredArgs[1] || process.env.SPACES_BUCKET || process.env.BUCKET_NAME;
+
+  try {
+    const searchSpinner = ora(`Searching Stack Overflow for "${query}"...`).start();
+    const results = await searchStackOverflow(query, bucket, dryRun);
+    searchSpinner.succeed(`Found ${results.length} questions`);
+
+    for (const question of results) {
+      let questionObject = `Question: ${question.title}\n`;
+      const questionMarkdown = turndownService.turndown(question.body);
+      questionObject += `Content: ${questionMarkdown}\n`;
+
+      const answerSpinner = ora(`Fetching answers for question: ${question.title}...`).start();
+      const answers = await fetchAnswerContent(question.question_id);
+      answerSpinner.succeed(`Fetched ${answers.length} answers`);
+
+      if (answers.length > 0) {
+        const answer = answers[0];
+        const answerMarkdown = turndownService.turndown(answer.body);
+        questionObject += `Answer: ${answerMarkdown}\n`;
+      }
+
+      const uploadSpinner = ora(`Uploading question: ${question.title}...`).start();
+      if (dryRun) {
+        console.log(chalk.blue(`[DRY RUN] Would upload ${question.title} to bucket ${bucket}`));
+        uploadSpinner.succeed(`Simulated upload of ${question.title}`);
+      } else {
+        await uploadBuffer(
+          bucket,
+          Buffer.from(questionObject, "utf-8"),
+          `${question.question_id}.md`
+        );
+        uploadSpinner.succeed(`Uploaded ${question.title}`);
+      }
+      console.log(chalk.green(`Processed content from question: ${question.title}`));
     }
     console.log(chalk.green("All questions processed and uploaded successfully"));
   } catch (error) {
@@ -105,3 +174,6 @@ const fetchAnswerContent = async (questionId) => {
     process.exit(1);
   }
 })();
+}
+
+export { searchStackOverflow };
