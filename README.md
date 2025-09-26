@@ -141,9 +141,15 @@ Create `.vscode/tasks.json`:
 Add to GitHub Actions:
 
 ```yaml
+- name: Setup KB Tools
+  run: |
+    git clone https://github.com/gokepelemo/DO-GradientAI-KB-Creation-Tools.git
+    cd DO-GradientAI-KB-Creation-Tools
+    npm install
+    npm link
+
 - name: Generate Knowledge Base
   run: |
-    npm install -g @gokepelemo/kb-tools
     kbcreationtools github ${{ github.repository }} --dry-run
 ```
 
