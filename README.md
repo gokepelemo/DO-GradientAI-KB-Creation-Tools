@@ -5,7 +5,7 @@
 
 **CLI tools for creating knowledge bases for DigitalOcean GradientAI**
 
-Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom, and web content to create comprehensive knowledge bases for AI training.
+Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom, and web content to create comprehensive knowledge bases for retrival augmented generation.
 
 ## ✨ Features
 
