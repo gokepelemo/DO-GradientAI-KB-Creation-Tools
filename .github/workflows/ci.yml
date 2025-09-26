@@ -32,33 +32,14 @@ jobs:
     - name: Run linting (if configured)
       run: npm run lint || echo "Linting not configured"
 
-  build:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Use Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build package
-      run: npm run build || echo "No build script configured"
-
     - name: Test CLI commands
       run: |
         node bin/cli.js --help
-        node bin/cli.js version
+        node bin/cli.js --version
 
   release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
