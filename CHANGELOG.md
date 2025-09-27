@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-09-26
+
+### Added
+
+- **GradientAI Indexing Integration**: Complete support for creating indexing jobs after successful uploads
+  - New CLI flags: `--gradientai-token`, `--knowledge-base-uuid`, `--data-source-uuids`, `--auto-index`
+  - Interactive prompts for knowledge base UUID when not provided via flags
+  - Automatic indexing option that creates indexing jobs immediately after uploads
+  - Direct integration with DigitalOcean GradientAI API for job creation
+  - Comprehensive error handling and user feedback for indexing operations
+
+### Changed
+
+- Enhanced CLI with new global options for GradientAI indexing
+- Improved user experience with interactive prompts and progress indicators
+- Updated environment variable schema to include GradientAI configuration
+
+### Testing
+
+- Added comprehensive Jest test suite for GradientAI functionality
+- Mocked API calls for reliable testing of indexing job creation
+- Error scenario testing for API failures and invalid inputs
+
 ## [1.1.0] - 2025-09-25
 
 ### Added
