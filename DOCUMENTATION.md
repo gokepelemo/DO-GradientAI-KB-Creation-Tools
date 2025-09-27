@@ -691,6 +691,31 @@ Provide Stack Overflow API key.
 kbcreationtools stackoverflow "query" --stackoverflow-key your_key
 ```
 
+### System Administration Flags
+
+#### `--operation-id <id>` (hidden)
+
+Specify a custom operation ID for sys admin updates. When provided with `--upload-hash`, \
+allows updating an existing operation's output file in place.
+
+```bash
+# Update existing operation with specific ID and hash
+kbcreationtools github microsoft vscode --operation-id vscode-docs --upload-hash a1b2c3d4
+```
+
+#### `--upload-hash <hash>` (hidden)
+
+Specify a custom upload hash for sys admin updates. Must be used with `--operation-id` \
+to update existing operations.
+
+```bash
+# Resume or update specific operation
+kbcreationtools processdoc https://docs.example.com --operation-id example-com --upload-hash e5f6g7h8
+```
+
+**Note**: These flags are intended for system administrators to update existing operations. \
+The output file will be uploaded to the same cloud storage path as the original operation.
+
 ## Use Cases & Automation
 
 ### Content Development Pipelines
@@ -760,6 +785,86 @@ jobs:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DO_TOKEN }}
         run: |
           kbcreationtools batchprocess batch-config.json --auto-index --knowledge-base-uuid ${{ secrets.KB_UUID }}
+```
+
+#### Ephemeral CI Environment Operations
+
+In temporary environments like CI jobs, you can pull operation logs from the bucket to \
+continue or update existing operations using specific operation IDs and hashes.
+
+```yaml
+# .github/workflows/incremental-updates.yml
+name: Incremental Content Updates
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+
+jobs:
+  update-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install KB Tools
+        run: |
+          git clone https://github.com/gokepelemo/DO-GradientAI-KB-Creation-Tools.git
+          cd DO-GradientAI-KB-Creation-Tools
+          ./install.sh
+      - name: Pull Operation Logs
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          # Pull latest operation logs from bucket
+          aws s3 cp s3://your-bucket/.kbcreationtools/log ./operation-log.jsonl --region us-east-1
+          
+          # Extract the latest successful operation for this repository
+          LATEST_OP=$(jq -r 'select(.status == "success" and (.sourceType == "github" or \
+            .sourceType == "processdoc")) | select(.timestamp | fromdate > (now - 86400)) | \
+            .operationId' ./operation-log.jsonl | tail -1)
+          
+          if [ -n "$LATEST_OP" ]; then
+            echo "Found existing operation: $LATEST_OP"
+            echo "OPERATION_ID=$LATEST_OP" >> $GITHUB_ENV
+            
+            # Extract upload hash for the operation
+            UPLOAD_HASH=$(jq -r "select(.operationId == \"$LATEST_OP\") | .uploadHash" ./operation-log.jsonl | tail -1)
+            echo "UPLOAD_HASH=$UPLOAD_HASH" >> $GITHUB_ENV
+          fi
+      - name: Update Content
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DO_TOKEN }}
+        run: |
+          if [ -n "$OPERATION_ID" ] && [ -n "$UPLOAD_HASH" ]; then
+            echo "Updating existing operation $OPERATION_ID with hash $UPLOAD_HASH"
+            # Update the existing operation in place
+            kbcreationtools github your-org docs --operation-id $OPERATION_ID \
+              --upload-hash $UPLOAD_HASH --auto-index --knowledge-base-uuid ${{ secrets.KB_UUID }}
+          else
+            echo "No existing operation found, creating new one"
+            kbcreationtools github your-org docs --auto-index --knowledge-base-uuid ${{ secrets.KB_UUID }}
+          fi
+
+This approach enables:
+- **Incremental Updates**: Continue existing operations instead of creating duplicates
+- **Resource Efficiency**: Reuse existing cloud storage paths and indexing jobs
+- **Cost Optimization**: Avoid redundant processing in ephemeral environments
+- **State Continuity**: Maintain operation history across CI runs
+
+```bash
+# Manual equivalent for local development
+# Pull logs and extract operation details
+aws s3 cp s3://your-bucket/.kbcreationtools/log ./operation-log.jsonl
+OP_ID=$(jq -r 'select(.status == "success") | .operationId' ./operation-log.jsonl | tail -1)
+HASH=$(jq -r "select(.operationId == \"$OP_ID\") | .uploadHash" ./operation-log.jsonl | tail -1)
+
+# Update existing operation
+kbcreationtools processdoc https://docs.example.com --operation-id $OP_ID --upload-hash $HASH
 ```
 
 #### Pre-commit Documentation Checks
