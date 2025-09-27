@@ -468,9 +468,12 @@ Use `jq` to parse logs and automate cleanup in cron scripts:
 # Cron script: Clean up old GitHub repo operations before weekly updates
 
 # Find operations older than 7 days for a specific repo
-OLD_OPERATIONS=$(jq -r 'select(.sourceType == "github" and (.operationParams.url // "" | \
-contains("microsoft/vscode"))) | select((now - (.timestamp | fromdate)) > (7 * 24 * 60 * 60)) | \
-.operationId' ~/.kbcreationtools/log)
+FILTER=$(cat << 'EOF'
+select(.sourceType == "github" and (.operationParams.url // "" | contains("microsoft/vscode"))) |
+select((now - (.timestamp | fromdate)) > (7 * 24 * 60 * 60)) | .operationId
+EOF
+)
+OLD_OPERATIONS=$(jq -r "$FILTER" ~/.kbcreationtools/log)
 
 # Delete old operations
 for op in $OLD_OPERATIONS; do
@@ -488,12 +491,17 @@ Parse logs to extract specific operation parameters for reuse:
 
 ```bash
 # Get the latest operation ID for a specific source
-LATEST_OP=$(jq -r 'select(.sourceType == "github" and (.operationParams.url // "" | \
-contains("microsoft/vscode"))) | select(.status != "failed") | .operationId' ~/.kbcreationtools/log | tail -1)
+FILTER=$(cat << 'EOF'
+select(.sourceType == "github" and (.operationParams.url // "" | contains("microsoft/vscode"))) |
+select(.status != "failed") | .operationId
+EOF
+)
+LATEST_OP=$(jq -r "$FILTER" ~/.kbcreationtools/log | tail -1)
 
 # Get operation parameters as shell variables
-OP_DETAILS=$(jq -r 'select(.operationId == "'$LATEST_OP'") | {operationId, uploadHash, sourceType, \
-url: .operationParams.url}' ~/.kbcreationtools/log | tail -1)
+OP_DETAILS=$(jq -r --arg opid "$LATEST_OP" \
+  'select(.operationId == $opid) | {operationId, uploadHash, sourceType, url: .operationParams.url}' \
+  ~/.kbcreationtools/log | tail -1)
 
 # Extract individual values
 OP_ID=$(echo "$OP_DETAILS" | jq -r '.operationId')
@@ -507,20 +515,18 @@ echo "Latest operation: $OP_ID (hash: $UPLOAD_HASH) from $SOURCE_URL"
 
 ```bash
 # Find failed operations for retry
-FAILED_OPS=$(jq -r 'select(.status == "failed") | \
-  select(.timestamp | fromdate > (now - 86400)) | .operationId' ~/.kbcreationtools/log)
+FAILED_OPS=$(jq -r 'select(.status == "failed") | select(.timestamp | fromdate > (now - 86400)) | .operationId' ~/.kbcreationtools/log)
 
 # Get operations by source type with document counts
 OP_STATS=$(jq -r 'select(.status != "failed") | \
-  "\(.sourceType): \(.documentsProcessed) docs, \(.totalSizeMB)MB"' ~/.kbcreationtools/log | sort | uniq -c)
+  "\(.sourceType): \(.documentsProcessed) docs, \(.totalSizeMB)MB"' \
+  ~/.kbcreationtools/log | sort | uniq -c)
 
 # Find operations that processed specific files
-DOC_OPS=$(jq -r 'select(.documentDetails[] | contains("README.md")) | \
-  .operationId' ~/.kbcreationtools/log)
+DOC_OPS=$(jq -r 'select(.documentDetails[] | contains("README.md")) | .operationId' ~/.kbcreationtools/log)
 
 # Extract URLs from webpage operations for re-crawling
-WEB_URLS=$(jq -r 'select(.sourceType == "webpage") | .operationParams.url' \
-  ~/.kbcreationtools/log | sort | uniq)
+WEB_URLS=$(jq -r 'select(.sourceType == "webpage") | .operationParams.url' ~/.kbcreationtools/log | sort | uniq)
 
 # Monitor operation success rate
 SUCCESS_RATE=$(jq -r 'select(.timestamp | fromdate > (now - 604800)) | \
@@ -529,7 +535,8 @@ SUCCESS_RATE=$(jq -r 'select(.timestamp | fromdate > (now - 604800)) | \
 
 # Get largest operations by size
 LARGE_OPS=$(jq -r 'select(.totalSizeBytes > 1000000) | \
-  "\(.operationId): \(.totalSizeMB)MB"' ~/.kbcreationtools/log | sort -k2 -n -r | head -5)
+  "\(.operationId): \(.totalSizeMB)MB"' ~/.kbcreationtools/log | \
+  sort -k2 -n -r | head -5)
 ```
 
 ### 📤 **Log Forwarding**
@@ -823,16 +830,21 @@ jobs:
           aws s3 cp s3://your-bucket/.kbcreationtools/log ./operation-log.jsonl --region us-east-1
           
           # Extract the latest successful operation for this repository
-          LATEST_OP=$(jq -r 'select(.status == "success" and (.sourceType == "github" or \
-            .sourceType == "processdoc")) | select(.timestamp | fromdate > (now - 86400)) | \
-            .operationId' ./operation-log.jsonl | tail -1)
+          FILTER=$(cat << 'EOF'
+select(.status == "success" and (.sourceType == "github" or .sourceType == "processdoc")) |
+select(.timestamp | fromdate > (now - 86400)) | .operationId
+EOF
+)
+          LATEST_OP=$(jq -r "$FILTER" ./operation-log.jsonl | tail -1)
           
           if [ -n "$LATEST_OP" ]; then
             echo "Found existing operation: $LATEST_OP"
             echo "OPERATION_ID=$LATEST_OP" >> $GITHUB_ENV
             
             # Extract upload hash for the operation
-            UPLOAD_HASH=$(jq -r "select(.operationId == \"$LATEST_OP\") | .uploadHash" ./operation-log.jsonl | tail -1)
+            UPLOAD_HASH=$(jq -r --arg opid "$LATEST_OP" \
+              'select(.operationId == $opid) | .uploadHash' \
+              ./operation-log.jsonl | tail -1)
             echo "UPLOAD_HASH=$UPLOAD_HASH" >> $GITHUB_ENV
           fi
       - name: Update Content
@@ -861,7 +873,7 @@ This approach enables:
 # Pull logs and extract operation details
 aws s3 cp s3://your-bucket/.kbcreationtools/log ./operation-log.jsonl
 OP_ID=$(jq -r 'select(.status == "success") | .operationId' ./operation-log.jsonl | tail -1)
-HASH=$(jq -r "select(.operationId == \"$OP_ID\") | .uploadHash" ./operation-log.jsonl | tail -1)
+HASH=$(jq -r --arg opid "$OP_ID" 'select(.operationId == $opid) | .uploadHash' ./operation-log.jsonl | tail -1)
 
 # Update existing operation
 kbcreationtools processdoc https://docs.example.com --operation-id $OP_ID --upload-hash $HASH
