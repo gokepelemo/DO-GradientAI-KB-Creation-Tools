@@ -256,7 +256,8 @@ async function logOperation(operationDetails, bucketName) {
     sourceType,
     documentsProcessed = [],
     totalSizeBytes = 0,
-    customId
+    customId,
+    ...otherDetails
   } = operationDetails;
 
   const finalOperationId = operationId || customId || generateOperationId(operationDetails);
@@ -270,7 +271,9 @@ async function logOperation(operationDetails, bucketName) {
     documentsProcessed: documentsProcessed.length,
     documentDetails: documentsProcessed,
     totalSizeBytes,
-    totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2)
+    totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2),
+    // Include all operation parameters for re-running/updating operations
+    operationParams: otherDetails
   };
 
   const logLine = JSON.stringify(logEntry) + '\n';
@@ -295,7 +298,8 @@ async function logFailedOperation(operationDetails, bucketName) {
     documentsProcessed = [],
     totalSizeBytes = 0,
     error,
-    customId
+    customId,
+    ...otherDetails
   } = operationDetails;
 
   const finalOperationId = operationId || customId || generateOperationId(operationDetails);
@@ -311,7 +315,9 @@ async function logFailedOperation(operationDetails, bucketName) {
     documentsProcessed: documentsProcessed.length,
     documentDetails: documentsProcessed,
     totalSizeBytes,
-    totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2)
+    totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2),
+    // Include all operation parameters for re-running failed operations
+    operationParams: otherDetails
   };
 
   const logLine = JSON.stringify(logEntry) + '\n';

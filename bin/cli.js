@@ -256,7 +256,9 @@ program
       startCommandSession({
         sourceType: 'extractlinks',
         url,
-        outputFileName: outputFile
+        outputFileName: outputFile,
+        selector,
+        selectorType
       });
 
       const links = await extractLinks(url, selector, selectorType);
@@ -333,7 +335,9 @@ program
       // Start logging session
       startCommandSession({
         url,
-        sourceType: 'webpage'
+        sourceType: 'webpage',
+        selector,
+        selectorType
       });
 
       await processDoc(url, selector, selectorType, finalBucket, globalOptions.dryRun);
@@ -394,7 +398,9 @@ program
       // Start logging session
       startCommandSession({
         sourceType: 'processurls',
-        filePath
+        filePath,
+        selector,
+        selectorType
       });
 
       await processUrls(filePath, selector, selectorType, finalBucket, globalOptions.dryRun);
@@ -697,7 +703,7 @@ program
     try {
       // Start logging session
       startCommandSession({
-        documentName: filePath.split('/').pop(),
+        filePath,
         sourceType: 'document'
       });
 
