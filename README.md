@@ -164,8 +164,8 @@ GPL-2.0 - See [LICENSE](LICENSE) file for details.
 
 #### "chalk is not defined"
 
-- Ensure Node.js v18+ is installed
-- Run: `nvm use node`
+- **Upgrade to Node.js v18+** - This tool requires Node.js v18 or higher
+- Check your current version: `node --version`
 
 #### API Authentication Errors
 
@@ -187,7 +187,7 @@ kbcreationtools <command> --help
 
 ## 🔒 Security & Best Practices
 
-- **Robots.txt Compliance**: Automatically checks website policies before crawling
+- **🤖 Robots.txt Compliance**: **Respects robots.txt by default** - automatically checks and follows website crawling policies
 - **Rate Limiting**: Built-in delays and retry logic for API calls
 - **Input Validation**: All inputs validated with Zod schemas
 - **Error Boundaries**: Comprehensive error handling prevents crashes

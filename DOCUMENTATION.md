@@ -44,6 +44,26 @@ The tool supports content extraction from the following sources:
 - **LLMs.txt Support**: Crawl documentation sites following LLMs.txt standards
 - **Sitemap Processing**: Extract and process all URLs from XML sitemaps
 
+#### 🤖 Robots.txt Compliance
+
+This tool **respects robots.txt by default** and automatically checks website policies before
+crawling. To prevent this tool from accessing your website, add the following lines to your
+`robots.txt` file:
+
+```robots.txt
+User-agent: kbcreationtools
+Disallow: /
+```
+
+This will block all crawling by the KB Creation Tools. You can also block specific paths:
+
+```robots.txt
+User-agent: kbcreationtools
+Disallow: /private/
+Disallow: /admin/
+Disallow: /api/
+```
+
 ### 📚 **Developer Platforms**
 
 - **GitHub Repositories**: Crawl code repositories, README files, and documentation
@@ -696,9 +716,9 @@ tail -n 1000 /var/log/application.log \
 #### "chalk is not defined"
 
 ```bash
-# Ensure Node.js v18+ is installed
-nvm use node
+# Upgrade to Node.js v18+ - this tool requires Node.js v18 or higher
 node --version  # Should show v18+
+# If you have an older version, upgrade Node.js first
 ```
 
 #### API Authentication Errors
