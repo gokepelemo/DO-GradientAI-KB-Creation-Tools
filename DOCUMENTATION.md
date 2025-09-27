@@ -861,6 +861,7 @@ EOF
             echo "No existing operation found, creating new one"
             kbcreationtools github your-org docs --auto-index --knowledge-base-uuid ${{ secrets.KB_UUID }}
           fi
+```
 
 This approach enables:
 - **Incremental Updates**: Continue existing operations instead of creating duplicates
