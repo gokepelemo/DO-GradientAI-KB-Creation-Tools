@@ -3,7 +3,7 @@
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 
-**CLI tools for creating knowledge bases for DigitalOcean GradientAI**
+CLI tools for creating knowledge bases for DigitalOcean GradientAI
 
 Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom, and web content to create comprehensive knowledge bases for AI training.
 
@@ -11,7 +11,7 @@ Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, 
 
 - 🚀 **Multiple Data Sources**: GitHub repos, Stack Overflow, Reddit, Intercom, web pages
 - 📦 **Document Processing**: PDF, DOCX, TXT, MD files with automatic text extraction
-- ☁️ **Cloud Storage**: Direct upload to DigitalOcean Spaces/S3
+- ☁️ **Cloud Storage**: Direct upload to DigitalOcean Spaces or AWS S3
 - 🔧 **Developer Friendly**: Interactive setup, dry-run mode, comprehensive logging
 - 🛠️ **Batch Processing**: JSON configuration for complex workflows
 - 📋 **LLMs.txt Support**: Crawl documentation sites with LLMs.txt standards
@@ -84,6 +84,21 @@ kbcreationtools batchprocess config.json
 kbcreationtools processllms https://example.com/llms.txt docs.json
 ```
 
+### GradientAI Indexing
+
+After successful uploads, you can optionally create indexing jobs for your GradientAI knowledge bases:
+
+```bash
+# Automatic indexing after upload
+kbcreationtools github microsoft vscode --auto-index --knowledge-base-uuid 123e4567-e89b-12d3-a456-426614174000
+
+# Specify data sources for indexing
+kbcreationtools github microsoft vscode --knowledge-base-uuid 123e4567-e89b-12d3-a456-426614174000 --data-source-uuids "uuid1,uuid2,uuid3"
+
+# Interactive indexing (will prompt for knowledge base UUID)
+kbcreationtools github microsoft vscode
+```
+
 ### Environment Setup
 
 The CLI will automatically prompt for required API keys on first use:
@@ -136,23 +151,6 @@ Create `.vscode/tasks.json`:
 }
 ```
 
-### CI/CD Integration
-
-Add to GitHub Actions:
-
-```yaml
-- name: Setup KB Tools
-  run: |
-    git clone https://github.com/gokepelemo/DO-GradientAI-KB-Creation-Tools.git
-    cd DO-GradientAI-KB-Creation-Tools
-    npm install
-    npm link
-
-- name: Generate Knowledge Base
-  run: |
-    kbcreationtools github ${{ github.repository }} --dry-run
-```
-
 ### Shell Aliases
 
 Add to your `~/.zshrc` or `~/.bashrc`:
@@ -178,15 +176,6 @@ make help
 # Install dependencies and link globally
 make install
 
-# Run tests
-make test
-
-# Run tests in watch mode
-make test-watch
-
-# Generate coverage report
-make test-coverage
-
 # Clean build artifacts
 make clean
 
@@ -195,11 +184,6 @@ make setup-dev
 
 # Create a new release
 make release
-
-# Quick API tests
-make github-test
-make stackoverflow-test
-make reddit-test
 ```
 
 ### Shell Completion
@@ -214,13 +198,6 @@ source kb-completion.sh
 echo "source $(pwd)/kb-completion.sh" >> ~/.zshrc
 ```
 
-### CI/CD Pipeline
-
-The project includes GitHub Actions for automated testing and releases:
-
-- **Test Matrix**: Runs tests on Node.js 18.x and 20.x
-- **Build Verification**: Ensures CLI builds and basic commands work
-
 ### Project Structure
 
 ```text
@@ -228,7 +205,6 @@ The project includes GitHub Actions for automated testing and releases:
 ├── modules/               # Core business logic
 ├── sources/               # Data source integrations
 ├── urls/                  # URL processing utilities
-├── .github/workflows/     # CI/CD pipelines
 ├── install.sh            # Installation script
 ├── setup-dev.js          # Developer setup
 ├── Makefile              # Development tasks
@@ -292,25 +268,11 @@ Priority order:
 - **Reddit**: Varies by endpoint
 - **Intercom**: Based on plan limits
 
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run with coverage
-npm run test:coverage
-```
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Run tests: `npm test`
-4. Submit a pull request
+3. Submit a pull request
 
 ## 📄 License
 
@@ -320,16 +282,17 @@ GPL-2.0 - See [LICENSE](LICENSE) file for details.
 
 ### Common Issues
 
-**"chalk is not defined"**
+#### "chalk is not defined"
 - Ensure Node.js v16+ is installed
 - Run: `nvm use node` (if using nvm)
 
-**API Authentication Errors**
+#### API Authentication Errors
 - Run the command without arguments first to be prompted for credentials
 - Check `.env` file has correct API keys
 
-**Upload Failures**
-- Verify DigitalOcean Spaces credentials
+#### Upload Failures
+
+- Verify DigitalOcean Spaces or AWS S3 credentials
 - Check bucket permissions
 - Use `--dry-run` to test without uploading
 
@@ -345,13 +308,16 @@ kbcreationtools github --help
 # Verbose logging
 kbcreationtools github microsoft vscode --verbose
 ```
+
 - Bucket parameter is the **last argument** in all commands where supported
 
-# All commands support --dry-run and --verbose flags
+All commands support --dry-run and --verbose flags
+
+```bash
 kbcreationtools batchprocess config.json --dry-run --verbose
 ```
 
-## 🆕 **New CLI Commands**
+## 🆕 New CLI Commands
 
 ### Default Behavior: Process Piped Input
 
@@ -370,7 +336,7 @@ cat myfile.txt | kbcreationtools pipestdin output.md
 
 The `processllms` command processes content based on what LLMs files are available:
 
-- **If `llms-full.txt` exists**: Downloads and uploads the complete file directly to Spaces
+- **If `llms-full.txt` exists**: Downloads and uploads the complete file directly to Spaces/S3
 - **If only `llms.txt` exists**: Extracts URLs from the file and processes each URL using the document processing pipeline
 - **If neither exists**: Converts the main page body content to plain text or markdown (based on output file extension)
 
@@ -397,20 +363,51 @@ This command:
 
 - Reads all input from stdin
 - Creates an output file with the content
-- Uploads the file to DigitalOcean Spaces
+- Uploads the file to DigitalOcean Spaces or AWS S3
 - Supports both `.txt` and `.md` extensions
 
-## 🔧 **Configuration**
+## 🔧 Environment Configuration
+
+### Cloud Storage Options
+
+KB Tools supports both **DigitalOcean Spaces** and **AWS S3** for cloud storage:
+
+#### DigitalOcean Spaces (Default)
+
+```env
+SPACES_REGION=us-east-1
+BUCKET_ENDPOINT=https://your-region.digitaloceanspaces.com
+DO_SPACES_BUCKET=your-knowledge-base-bucket
+```
+
+#### AWS S3
+
+```env
+AWS_BUCKET_REGION=us-east-1
+DO_SPACES_BUCKET=your-s3-bucket-name
+# Note: BUCKET_ENDPOINT is not needed for AWS S3
+```
 
 ### Environment Variables
 
 Create a `.env` file with your configuration:
 
 ```env
-# Spaces/S3 Configuration
+# Cloud Storage (choose one option)
+# For DigitalOcean Spaces:
 SPACES_REGION=us-east-1
 BUCKET_ENDPOINT=https://your-region.digitaloceanspaces.com
-SPACES_BUCKET=your-knowledge-base-bucket
+DO_SPACES_BUCKET=your-spaces-bucket
+
+# For AWS S3:
+AWS_BUCKET_REGION=us-east-1
+DO_SPACES_BUCKET=your-s3-bucket
+
+# GradientAI (optional, for indexing jobs)
+DIGITALOCEAN_ACCESS_TOKEN=your_digitalocean_access_token
+GRADIENTAI_KNOWLEDGE_BASE_UUID=your_knowledge_base_uuid
+GRADIENTAI_DATA_SOURCE_UUIDS=uuid1,uuid2,uuid3
+GRADIENTAI_AUTO_INDEX=true
 
 # API Tokens (optional, depending on sources used)
 GITHUB_TOKEN=your_github_token
@@ -424,7 +421,7 @@ STACKOVERFLOW_API_KEY=your_stackoverflow_key
 
 See [`batch-config-example.json`](https://raw.githubusercontent.com/gokepelemo/DO-GradientAI-KB-Creation-Tools/main/batch-config-example.json) for a complete configuration example with all supported options.
 
-## 🧪 **Testing**
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -437,7 +434,7 @@ npm run test:watch
 npm run test:coverage
 ```
 
-## 🏛️ **Architecture Details**
+## 🏛️ Architecture Details
 
 ### Core Modules
 
@@ -446,7 +443,7 @@ npm run test:coverage
 - **`modules/errorHandling.js`**: Standardized error handling utilities
 - **`modules/browser.js`**: Shared Puppeteer browser instance management
 - **`modules/apiClients.js`**: Reusable API client classes
-- **`modules/uploadToSpaces.js`**: DigitalOcean Spaces upload utilities
+- **`modules/uploadToSpaces.js`**: DigitalOcean Spaces and AWS S3 upload utilities
 
 ### Source Modules
 
@@ -464,29 +461,66 @@ Each source module follows a consistent pattern:
 - **Error handling**: Consistent error reporting and exit codes
 - **Global options**: `--dry-run`, `--verbose` available on all commands
 
-## 🔒 **Security & Best Practices**
+## 🔒 Security & Best Practices
 
 - **Environment variables**: Sensitive data stored securely
 - **Input validation**: All user inputs validated with Zod schemas
-- **Robots.txt compliance**: Automatic checking before web scraping
 - **Rate limiting**: Built-in delays and retry logic for API calls
 - **Error boundaries**: Comprehensive error handling prevents crashes
 
-## 📊 **Performance Optimizations**
+### 🤖 Robots.txt Compliance & User Agent
+
+KB Tools respects website policies and follows web scraping best practices:
+
+#### Robots.txt Compliance
+
+All web scraping operations automatically check the target website's `robots.txt` file before proceeding:
+
+- **Automatic Checking**: Before crawling any website, the tool fetches and parses `robots.txt`
+- **User Agent Matching**: Uses the tool's user agent string to check if access is allowed
+- **Path Validation**: Verifies that the specific URL path is permitted for crawling
+- **Graceful Fallback**: If `robots.txt` is unavailable or malformed, the tool assumes access is allowed
+- **Error Handling**: Network errors when fetching `robots.txt` don't block operations
+
+**What happens if access is denied?**
+
+- The tool will display an error message and exit
+- No content will be scraped from the website
+- This helps maintain good relations with website owners
+
+#### User Agent
+
+All HTTP requests include a consistent user agent string:
+
+- **Default User Agent**: `GradientAIToolsv1`
+- **Purpose**: Identifies the tool to website owners and APIs
+- **Consistency**: Same user agent used across all sources (web scraping, API calls)
+- **Transparency**: Helps website administrators understand the source of traffic
+
+**Current user agent cannot be customized** - it is hardcoded for consistency and accountability.
+
+#### Best Practices Implemented
+
+- **Respectful Crawling**: Only scrapes content when explicitly requested by users
+- **Rate Limiting**: Built-in delays between requests to avoid overwhelming servers
+- **Error Recovery**: Handles network issues gracefully without aggressive retry logic
+- **Resource Cleanup**: Properly closes browser instances and network connections
+
+## 📊 Performance Optimizations
 
 - **Browser pooling**: Shared Puppeteer instances reduce startup time
 - **Connection reuse**: HTTP keep-alive for API requests
 - **Batch processing**: Efficient handling of multiple sources
 - **Memory management**: Proper cleanup of resources
 
-## 🤝 **Contributing**
+## 🤝 Development Guidelines
 
 1. **Code Style**: Follow existing patterns and use ESLint
 2. **Testing**: Add tests for new features with >80% coverage
 3. **Documentation**: Update README and inline docs for changes
 4. **Validation**: Use Zod schemas for new configuration options
 
-## 📈 **Developer Experience Improvements**
+## 📈 Developer Experience Improvements
 
 ✅ **Unified CLI**: Single command with subcommands instead of separate scripts
 ✅ **Type Safety**: Runtime validation with Zod prevents configuration errors
@@ -498,8 +532,6 @@ Each source module follows a consistent pattern:
 
 ## Features
 
-- **User Agent**: All requests use the user agent "GradientAIToolsv1".
-- **Robots.txt Compliance**: Tools check robots.txt before scraping websites to respect site policies.
 - **AWS SDK v3**: Uses the latest AWS SDK for JavaScript v3 for better performance and modern async/await patterns.
 - **Progress Indicators**: All async operations show progress spinners using ora.
 - **Colored CLI Output**: Progress and error messages are highlighted using chalk for better readability.
@@ -681,6 +713,6 @@ See [`batch-config-example.json`](https://raw.githubusercontent.com/gokepelemo/D
 - batchProcessor.js processes multiple files and sources based on a JSON configuration file, supporting batch operations for documents, web pages, link extraction, and sitemap processing.
   - Usage: `kbcreationtools batchprocess <config.json> [--dry-run]`
 
-## 📄 **License**
+## 📄 Project License
 
 This project is licensed under the GNU General Public License version 2.0 (GPL-2.0). See the [LICENSE](LICENSE) file for details.

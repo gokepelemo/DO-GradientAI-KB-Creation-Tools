@@ -3,23 +3,120 @@ import path from 'path';
 import inquirer from 'inquirer';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Use ~/.kbcreationtools directory for .env file
+const configDir = path.join(os.homedir(), '.kbcreationtools');
+const envPath = path.join(configDir, '.env');
+
+// Ensure config directory exists
+if (!fs.existsSync(configDir)) {
+  fs.mkdirSync(configDir, { recursive: true });
+}
+
 // Load existing .env file if it exists
-const envPath = path.join(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
+// Configuration schema with CLI flag mappings
+const CONFIG_SCHEMA = {
+  // GitHub
+  githubToken: {
+    env: 'GITHUB_TOKEN',
+    flag: '--github-token <token>',
+    description: 'GitHub Personal Access Token (with repo access)',
+    required: ['github']
+  },
+
+  // Intercom
+  intercomToken: {
+    env: 'INTERCOM_ACCESS_TOKEN',
+    flag: '--intercom-token <token>',
+    description: 'Intercom API Access Token',
+    required: ['intercom']
+  },
+
+  // Reddit
+  redditClientId: {
+    env: 'REDDIT_CLIENT_ID',
+    flag: '--reddit-client-id <id>',
+    description: 'Reddit API Client ID',
+    required: ['reddit']
+  },
+  redditClientSecret: {
+    env: 'REDDIT_CLIENT_SECRET',
+    flag: '--reddit-client-secret <secret>',
+    description: 'Reddit API Client Secret',
+    required: ['reddit']
+  },
+
+  // Stack Overflow
+  stackoverflowKey: {
+    env: 'STACKOVERFLOW_API_KEY',
+    flag: '--stackoverflow-key <key>',
+    description: 'Stack Overflow API Key (optional)',
+    required: [] // Optional
+  },
+
+  // Storage/Bucket
+  bucketName: {
+    env: 'DO_SPACES_BUCKET',
+    flag: '--bucket <name>',
+    description: 'DigitalOcean Spaces Bucket Name',
+    required: [] // Required when uploading
+  },
+  bucketEndpoint: {
+    env: 'BUCKET_ENDPOINT',
+    flag: '--bucket-endpoint <url>',
+    description: 'Spaces/S3 Endpoint URL',
+    required: [] // Required when uploading
+  },
+  bucketRegion: {
+    env: 'AWS_BUCKET_REGION',
+    flag: '--bucket-region <region>',
+    description: 'AWS Region (e.g., us-east-1)',
+    fallbackEnv: 'SPACES_REGION',
+    required: [] // Required when uploading
+  },
+
+  // GradientAI
+  gradientaiToken: {
+    env: 'DIGITALOCEAN_ACCESS_TOKEN',
+    flag: '--gradientai-token <token>',
+    description: 'DigitalOcean Access Token for GradientAI',
+    required: [] // Required when creating indexing jobs
+  },
+  knowledgeBaseUuid: {
+    env: 'GRADIENTAI_KNOWLEDGE_BASE_UUID',
+    flag: '--knowledge-base-uuid <uuid>',
+    description: 'GradientAI Knowledge Base UUID for indexing',
+    required: [] // Required when creating indexing jobs
+  },
+  dataSourceUuids: {
+    env: 'GRADIENTAI_DATA_SOURCE_UUIDS',
+    flag: '--data-source-uuids <uuids>',
+    description: 'GradientAI Data Source UUIDs (comma-separated) for indexing',
+    required: [] // Optional for indexing jobs
+  },
+  autoIndex: {
+    env: 'GRADIENTAI_AUTO_INDEX',
+    flag: '--auto-index',
+    description: 'Automatically create indexing job after successful upload',
+    required: [] // Optional flag
+  }
+};
+
 // Define required environment variables for each command
 const COMMAND_REQUIREMENTS = {
-  github: ['GITHUB_TOKEN'],
-  intercom: ['INTERCOM_ACCESS_TOKEN'],
-  reddit: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET'],
-  stackoverflow: ['STACKOVERFLOW_API_KEY'], // Optional but recommended
-  default: [], // Default behavior doesn't require specific env vars
+  github: ['githubToken'],
+  intercom: ['intercomToken'],
+  reddit: ['redditClientId', 'redditClientSecret'],
+  stackoverflow: [], // API key is optional
+  default: [], // Default behavior doesn't require specific config
 };
 
 // Optional but commonly needed for uploads
@@ -28,133 +125,198 @@ const COMMON_REQUIREMENTS = {
   spaces: ['BUCKET_ENDPOINT', 'AWS_BUCKET_REGION'],
 };
 
-/**
- * Check if required environment variables are set for a command
- * @param {string} command - The command name
- * @param {boolean} needsBucket - Whether the command needs bucket configuration
- * @returns {string[]} Array of missing required environment variables
- */
-export function getMissingEnvVars(command, needsBucket = false) {
-  const required = COMMAND_REQUIREMENTS[command] || [];
-  const missing = [];
+// Get configuration value with priority: CLI flags > Environment variables > .env file
+function getConfigValue(key, cliValue, envVar, fallbackEnvVar = null) {
+  // Priority 1: CLI flag
+  if (cliValue !== undefined && cliValue !== null) {
+    return cliValue;
+  }
 
-  // Check command-specific requirements
-  for (const envVar of required) {
-    if (!process.env[envVar]) {
-      missing.push(envVar);
+  // Priority 2: Environment variable
+  if (process.env[envVar]) {
+    return process.env[envVar];
+  }
+
+  // Priority 3: Fallback environment variable
+  if (fallbackEnvVar && process.env[fallbackEnvVar]) {
+    return process.env[fallbackEnvVar];
+  }
+
+  // Priority 4: .env file (already loaded by dotenv)
+  if (process.env[envVar]) {
+    return process.env[envVar];
+  }
+
+  if (fallbackEnvVar && process.env[fallbackEnvVar]) {
+    return process.env[fallbackEnvVar];
+  }
+
+  return null;
+}
+
+// Get all configuration values for a command
+function getCommandConfig(command, cliOptions = {}) {
+  const config = {};
+  const requirements = COMMAND_REQUIREMENTS[command] || COMMAND_REQUIREMENTS.default;
+
+  // Get required config values
+  for (const req of requirements) {
+    const schema = CONFIG_SCHEMA[req];
+    if (schema) {
+      const value = getConfigValue(req, cliOptions[req], schema.env, schema.fallbackEnv);
+      config[schema.env] = value;
     }
   }
 
-  // Check bucket requirements if needed
-  if (needsBucket) {
-    for (const envVar of COMMON_REQUIREMENTS.bucket) {
-      if (!process.env[envVar]) {
-        missing.push(envVar);
+  // Get common config values (bucket, etc.)
+  for (const [key, schema] of Object.entries(CONFIG_SCHEMA)) {
+    if (!requirements.includes(key)) {
+      const value = getConfigValue(key, cliOptions[key], schema.env, schema.fallbackEnv);
+      if (value !== null) {
+        config[schema.env] = value;
       }
     }
   }
 
-  return missing;
+  return config;
 }
 
-/**
- * Prompt user for missing environment variables
- * @param {string[]} missingVars - Array of missing environment variable names
- * @returns {Promise<Object>} Object with variable names as keys and values as values
- */
-export async function promptForEnvVars(missingVars) {
-  if (missingVars.length === 0) {
+// Check if all required environment variables are available
+function hasRequiredEnvVars(command, cliOptions = {}) {
+  const config = getCommandConfig(command, cliOptions);
+  const requirements = COMMAND_REQUIREMENTS[command] || COMMAND_REQUIREMENTS.default;
+
+  for (const req of requirements) {
+    const schema = CONFIG_SCHEMA[req];
+    if (schema && !config[schema.env]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Prompt for missing environment variables
+async function promptForMissingEnvVars(command, cliOptions = {}) {
+  const config = getCommandConfig(command, cliOptions);
+  const requirements = COMMAND_REQUIREMENTS[command] || COMMAND_REQUIREMENTS.default;
+  const missing = [];
+
+  for (const req of requirements) {
+    const schema = CONFIG_SCHEMA[req];
+    if (schema && !config[schema.env]) {
+      missing.push({
+        key: req,
+        env: schema.env,
+        description: schema.description,
+        type: req.includes('secret') || req.includes('token') ? 'password' : 'input'
+      });
+    }
+  }
+
+  if (missing.length === 0) {
     return {};
   }
 
-  console.log('\n🔧 Some required environment variables are missing.');
-  console.log('Please provide the following values:\n');
-
-  const questions = missingVars.map(envVar => ({
-    type: 'input',
-    name: envVar,
-    message: `Enter ${getEnvVarDescription(envVar)}:`,
-    validate: (input) => input.trim() !== '' || `${envVar} is required`,
-    transformer: (input) => input ? '***' : '', // Hide sensitive input
+  console.log(`\nMissing required configuration for '${command}' command:`);
+  const questions = missing.map(item => ({
+    type: item.type,
+    name: item.key,
+    message: item.description,
+    validate: (input) => input.trim() !== '' || 'This field is required'
   }));
 
   const answers = await inquirer.prompt(questions);
-  return answers;
+
+  // Convert answers to environment variable format
+  const envVars = {};
+  for (const [key, value] of Object.entries(answers)) {
+    const schema = CONFIG_SCHEMA[key];
+    if (schema) {
+      envVars[schema.env] = value;
+    }
+  }
+
+  return envVars;
 }
 
-/**
- * Save environment variables to .env file
- * @param {Object} envVars - Object with variable names as keys and values as values
- */
-export function saveEnvVars(envVars) {
+// Save environment variables to .env file
+function saveEnvVars(envVars) {
   let envContent = '';
 
   // Read existing .env file if it exists
   if (fs.existsSync(envPath)) {
-    envContent = fs.readFileSync(envPath, 'utf-8');
-    envContent += '\n';
+    envContent = fs.readFileSync(envPath, 'utf8');
   }
 
-  // Add new variables
+  // Update or add new variables
   for (const [key, value] of Object.entries(envVars)) {
-    // Only add if not already present
-    if (!envContent.includes(`${key}=`)) {
-      envContent += `${key}=${value}\n`;
-    }
-  }
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    const newLine = `${key}=${value}`;
 
-  // Write back to file
-  fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf-8');
-
-  // Reload environment variables
-  dotenv.config({ path: envPath, override: true });
-
-  console.log(`✅ Environment variables saved to ${envPath}`);
-}
-
-/**
- * Main function to ensure required environment variables are available
- * @param {string} command - The command name
- * @param {boolean} needsBucket - Whether the command needs bucket configuration
- * @returns {Promise<boolean>} True if all requirements are met
- */
-export async function ensureEnvVars(command, needsBucket = false) {
-  const missingVars = getMissingEnvVars(command, needsBucket);
-
-  if (missingVars.length === 0) {
-    return true;
-  }
-
-  try {
-    const envVars = await promptForEnvVars(missingVars);
-    saveEnvVars(envVars);
-    return true;
-  } catch (error) {
-    if (error.isTtyError) {
-      console.error('❌ Interactive prompts are not supported in this environment');
+    if (regex.test(envContent)) {
+      envContent = envContent.replace(regex, newLine);
     } else {
-      console.error('❌ Failed to collect environment variables:', error.message);
+      envContent += `\n${newLine}`;
     }
-    return false;
   }
+
+  // Write back to .env file
+  fs.writeFileSync(envPath, envContent.trim() + '\n');
 }
 
-/**
- * Get user-friendly description for environment variable
- * @param {string} envVar - Environment variable name
- * @returns {string} Description
- */
-function getEnvVarDescription(envVar) {
-  const descriptions = {
-    GITHUB_TOKEN: 'GitHub Personal Access Token (with repo access)',
-    INTERCOM_ACCESS_TOKEN: 'Intercom API Access Token',
-    REDDIT_CLIENT_ID: 'Reddit API Client ID',
-    REDDIT_CLIENT_SECRET: 'Reddit API Client Secret',
-    STACKOVERFLOW_API_KEY: 'Stack Overflow API Key (optional)',
-    DO_SPACES_BUCKET: 'DigitalOcean Spaces Bucket Name',
-    BUCKET_ENDPOINT: 'Spaces/S3 Endpoint URL',
-    AWS_BUCKET_REGION: 'AWS Region (e.g., us-east-1)',
-  };
+// Main function to ensure environment variables are available
+export async function ensureEnvVars(command, cliOptions = {}) {
+  // Check if we have all required variables
+  if (hasRequiredEnvVars(command, cliOptions)) {
+    return getCommandConfig(command, cliOptions);
+  }
 
-  return descriptions[envVar] || envVar;
+  // Prompt for missing variables
+  const promptedVars = await promptForMissingEnvVars(command, cliOptions);
+
+  // Save to .env file for future use
+  if (Object.keys(promptedVars).length > 0) {
+    saveEnvVars(promptedVars);
+    console.log('Configuration saved to .env file for future use.');
+  }
+
+  // Return complete configuration
+  return { ...getCommandConfig(command, cliOptions), ...promptedVars };
+}
+
+// Get CLI flag definitions for a command
+export function getCommandFlags(command) {
+  const flags = [];
+  const requirements = COMMAND_REQUIREMENTS[command] || COMMAND_REQUIREMENTS.default;
+
+  // Add required flags
+  for (const req of requirements) {
+    const schema = CONFIG_SCHEMA[req];
+    if (schema) {
+      flags.push({
+        flag: schema.flag,
+        description: schema.description,
+        option: req
+      });
+    }
+  }
+
+  // Add common flags
+  for (const [key, schema] of Object.entries(CONFIG_SCHEMA)) {
+    if (!requirements.includes(key)) {
+      flags.push({
+        flag: schema.flag,
+        description: schema.description,
+        option: key
+      });
+    }
+  }
+
+  return flags;
+}
+
+// Legacy function for backward compatibility
+export async function ensureEnvVarsLegacy(command) {
+  return ensureEnvVars(command, {});
 }
