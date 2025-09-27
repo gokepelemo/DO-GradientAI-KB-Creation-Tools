@@ -17,11 +17,16 @@
 
 ## Purpose
 
-KB Creation Tools is a comprehensive CLI utility designed to simplify the ingestion of content into DigitalOcean GradientAI agent's knowledge bases. The tool automates the extraction, processing, and uploading of documentation from multiple sources, making it easier for developers, product managers, and system administrators to build rich knowledge bases for retrieval-augmented generation (RAG) applications.
+KB Creation Tools is a comprehensive CLI utility designed to simplify the ingestion of content
+into DigitalOcean GradientAI agent's knowledge bases. The tool automates the extraction,
+processing, and uploading of documentation from multiple sources, making it easier for
+developers, product managers, and system administrators to build rich knowledge bases
+for retrieval-augmented generation (RAG) applications.
 
 ### Key Benefits
 
-- **Multi-Source Content Ingestion**: Extract content from GitHub repositories, Stack Overflow, Reddit, Intercom, web pages, and local documents
+- **Multi-Source Content Ingestion**: Extract content from GitHub repositories, Stack Overflow,
+  Reddit, Intercom, web pages, and local documents
 - **Automated Processing**: Handle PDF, DOCX, TXT, and MD files with automatic text extraction
 - **Cloud Integration**: Direct upload to DigitalOcean Spaces or AWS S3
 - **GradientAI Integration**: Automatic indexing job creation for seamless knowledge base updates
@@ -101,7 +106,9 @@ kbcreationtools github microsoft vscode
 
 ## CLI Commands
 
-All uploads are organized using a structured path format: `{operationId}/{uploadHash}/{filename}`. The operation ID is derived from the source (e.g., repository name, domain), and the upload hash is a 6-character random string that ensures uniqueness and enables easy deletion of related files.
+All uploads are organized using a structured path format: `{operationId}/{uploadHash}/{filename}`.
+The operation ID is derived from the source (e.g., repository name, domain), and the upload hash is a
+(truncated…)
 
 ### Core Commands
 
@@ -277,6 +284,27 @@ kbcreationtools batchprocess batch-config.json
 kbcreationtools batchprocess batch-config-example.json
 ```
 
+#### `kbcreationtools validate-config <configFile>`
+
+Validate a batch configuration JSON file for syntax, structure, and data integrity before processing.
+
+```bash
+# Validate configuration file
+kbcreationtools validate-config batch-config.json
+
+# Validate example configuration
+kbcreationtools validate-config batch-config-example.json
+```
+
+The validator checks for:
+
+- JSON syntax validity
+- Required configuration fields
+- File existence for document processing
+- URL format validation
+- Bucket name format compliance
+- Data structure validation for all supported sections
+
 #### `kbcreationtools pipestdin <outputFile> [bucket]`
 
 Explicitly process piped stdin content (alternative to default behavior).
@@ -293,7 +321,8 @@ cat content.txt | kbcreationtools pipestdin output.txt my-bucket
 
 #### `kbcreationtools delete [operationId] [bucket]`
 
-Delete all uploads from a specific operation ID or operation\\hash combination. If no operation ID is specified, lists available operations for interactive selection.
+Delete all uploads from a specific operation ID or operation\\hash combination. If no operation ID is
+specified, lists available operations for interactive selection.
 
 ```bash
 # Delete all uploads from an operation
@@ -577,7 +606,8 @@ fi
 
 ### Overview
 
-The stdin processing feature allows you to pipe content directly into the tool, making it perfect for automation and integration with other command-line tools.
+The stdin processing feature allows you to pipe content directly into the tool, making it perfect for
+automation and integration with other command-line tools.
 
 ### Basic Usage
 

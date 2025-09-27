@@ -5,7 +5,8 @@
 
 CLI tools for creating knowledge bases for DigitalOcean GradientAI
 
-Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom, and web content to create comprehensive knowledge bases for retrieval augmented generation.
+Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom,
+and web content to create comprehensive knowledge bases for retrieval augmented generation.
 
 📖 **[Comprehensive Documentation](DOCUMENTATION.md)** - Complete guide for beginners, product managers, and sys admins
 
@@ -67,6 +68,7 @@ kbcreationtools extractlinks <url> <output>    # Extract links from webpage
 
 # Workflows
 kbcreationtools batchprocess <config.json>     # Process multiple sources
+kbcreationtools validate-config <config.json>  # Validate batch config
 kbcreationtools processllms <url> <output>     # Process LLMs.txt sites
 
 # Utilities
@@ -121,7 +123,7 @@ See [`batch-config-example.json`](batch-config-example.json) for complete config
 
 ## 🏗️ Project Structure
 
-```
+```text
 ├── bin/                    # CLI entry points
 ├── modules/               # Core business logic
 ├── sources/               # Data source integrations
@@ -158,14 +160,17 @@ GPL-2.0 - See [LICENSE](LICENSE) file for details.
 ### Common Issues
 
 #### "chalk is not defined"
+
 - Ensure Node.js v18+ is installed
 - Run: `nvm use node`
 
 #### API Authentication Errors
+
 - Run commands without arguments first to be prompted for credentials
 - Check `.env` file has correct API keys
 
 #### Upload Failures
+
 - Verify DigitalOcean Spaces or AWS S3 credentials
 - Check bucket permissions
 - Use `--dry-run` to test without uploading

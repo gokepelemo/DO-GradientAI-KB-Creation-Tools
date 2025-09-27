@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
 import inquirer from 'inquirer';
 import { processBatch } from '../modules/batchProcessor.js';
+import { validateBatchConfig } from '../modules/batchConfigValidator.js';
 import { processDoc } from '../modules/processDoc.js';
 import { processUrls } from '../sources/processDocs.js';
 import { extractLinks } from '../urls/extractLinks.js';
@@ -756,6 +757,50 @@ program
     try {
       const globalOptions = program.opts();
       await processBatch(configFile, globalOptions.dryRun);
+    } catch (error) {
+      console.error(chalk.red('Error:'), error.message);
+      process.exit(1);
+    }
+  });
+
+// Validate batch config command
+program
+  .command('validate-config <configFile>')
+  .description('Validate a batch configuration JSON file for syntax and structure')
+  .action(async (configFile) => {
+    try {
+      const results = validateBatchConfig(configFile);
+
+      console.log(chalk.blue(`\n🔍 Validating batch config: ${configFile}\n`));
+
+      // Display info messages
+      if (results.info.length > 0) {
+        results.info.forEach(info => console.log(chalk.blue(`ℹ️  ${info}`)));
+        console.log();
+      }
+
+      // Display warnings
+      if (results.warnings.length > 0) {
+        results.warnings.forEach(warning => console.log(chalk.yellow(`⚠️  ${warning}`)));
+        console.log();
+      }
+
+      // Display errors
+      if (results.errors.length > 0) {
+        results.errors.forEach(error => console.log(chalk.red(`❌ ${error}`)));
+        console.log();
+      }
+
+      // Final result
+      if (results.valid) {
+        console.log(chalk.green('✅ Configuration is valid!'));
+        if (results.warnings.length > 0) {
+          console.log(chalk.yellow(`Found ${results.warnings.length} warning(s) that you may want to address.`));
+        }
+      } else {
+        console.log(chalk.red(`❌ Configuration has ${results.errors.length} error(s) that must be fixed.`));
+        process.exit(1);
+      }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
       process.exit(1);
