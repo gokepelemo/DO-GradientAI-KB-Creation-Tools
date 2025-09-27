@@ -9,6 +9,7 @@
 - [Data Sources](#data-sources)
 - [Configuration](#configuration)
 - [CLI Commands](#cli-commands)
+- [Operation Logging & Management](#operation-logging--management)
 - [Global Flags](#global-flags)
 - [Use Cases & Automation](#use-cases--automation)
 - [Stdin Processing Feature](#stdin-processing-feature)
@@ -365,6 +366,120 @@ List all logged operations from both bucket and local logs.
 ```bash
 # Show all operations
 kbcreationtools list-operations
+```
+
+## Operation Logging & Management
+
+The tool provides comprehensive operation logging to track all upload activities, enabling system
+administrators to monitor, manage, and troubleshoot content ingestion operations.
+
+### 📊 **Log Storage**
+
+Operations are logged to two locations for redundancy and accessibility:
+
+- **Bucket Logs**: Stored in your cloud storage bucket at `.kbcreationtools/log`
+- **Local Logs**: Stored on the local machine at `~/.kbcreationtools/log`
+
+### 📋 **Log Contents**
+
+Each log entry contains detailed operation information:
+
+```json
+{
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "username": "sysadmin",
+  "operationId": "microsoft-vscode",
+  "uploadHash": "a1b2c3d4",
+  "sourceType": "github",
+  "documentsProcessed": 15,
+  "documentDetails": ["README.md", "docs/api.md", ...],
+  "totalSizeBytes": 245760,
+  "totalSizeMB": "0.23",
+  "operationParams": {
+    "url": "https://github.com/microsoft/vscode",
+    "sourceType": "github"
+  }
+}
+```
+
+Failed operations include additional error information:
+
+```json
+{
+  "timestamp": "2025-09-26T10:35:00.000Z",
+  "username": "sysadmin",
+  "operationId": "example-com",
+  "uploadHash": "e5f6g7h8",
+  "sourceType": "webpage",
+  "status": "failed",
+  "error": "Connection timeout",
+  "documentsProcessed": 0,
+  "documentDetails": [],
+  "totalSizeBytes": 0,
+  "totalSizeMB": "0.00",
+  "operationParams": {
+    "url": "https://example.com/docs",
+    "sourceType": "webpage",
+    "selector": ".content",
+    "selectorType": "css"
+  }
+}
+```
+
+### 🔍 **Finding Operations**
+
+System administrators can locate specific operations using the `list-operations` command:
+
+```bash
+# List all operations from bucket and local logs
+kbcreationtools list-operations
+
+# List operations from specific bucket
+kbcreationtools list-operations --bucket my-bucket
+```
+
+### 🗑️ **Deleting Operations Before Updates**
+
+Before uploading new versions of content, parse the log file to identify and remove previous operations:
+
+```bash
+# 1. List operations to find the operation ID
+kbcreationtools list-operations
+
+# 2. Delete specific operation before re-uploading
+kbcreationtools delete microsoft-vscode
+
+# 3. Re-run the operation with updated content
+kbcreationtools github microsoft vscode
+```
+
+### 📤 **Log Forwarding**
+
+Local log files can be forwarded to remote logging services for centralized monitoring:
+
+```bash
+# Example: Forward logs to a remote syslog server
+tail -f ~/.kbcreationtools/log | logger -n log.example.com -P 514 -t kbcreationtools
+
+# Example: Forward to Elasticsearch or other log aggregation services
+tail -f ~/.kbcreationtools/log | curl -X POST -H "Content-Type: application/json" \
+  -d @- https://logging.example.com/api/logs
+```
+
+### 🚨 **Failure Monitoring**
+
+Failed operations are automatically logged with error details, enabling:
+
+- **Automated Alerts**: Set up monitoring to detect failed operations
+- **Retry Logic**: Parse logs to identify and retry failed operations
+- **Root Cause Analysis**: Detailed error information for troubleshooting
+
+```bash
+# Monitor for failed operations
+grep '"status":"failed"' ~/.kbcreationtools/log | jq -r '.error'
+
+# Count failures by source type
+grep '"status":"failed"' ~/.kbcreationtools/log | jq -r '.operationParams.sourceType' | sort | uniq -c
 ```
 
 ## Global Flags
