@@ -18,7 +18,7 @@ import { processDocument } from '../modules/docProcessor.js';
 import { processLLMsTxt } from '../modules/llmsProcessor.js';
 import { deleteOperationUploads, listOperations, promptForOperationSelection } from '../modules/deleteUploads.js';
 import { ensureEnvVars, getCommandFlags } from '../modules/envCollector.js';
-import { startCommandSession, endCommandSession } from '../modules/logger.js';
+import { startCommandSession, endCommandSession, endCommandSessionWithFailure } from '../modules/logger.js';
 import { createIndexingJob, promptForIndexingJob } from '../modules/gradientAI.js';
 import { processStdinUpload } from '../modules/stdinProcessor.js';
 
@@ -190,6 +190,9 @@ program
         }
       } catch (error) {
         console.error(chalk.red('Error:'), error.message);
+        if (!globalOptions.dryRun) {
+          await endCommandSessionWithFailure(finalBucket, error);
+        }
         process.exit(1);
       }
     } else {
@@ -280,6 +283,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun && bucket && finalBucket) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -338,6 +344,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -396,6 +405,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -454,6 +466,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -511,6 +526,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -569,6 +587,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -627,6 +648,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -685,6 +709,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -745,6 +772,10 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun && bucket && config) {
+        const finalBucket = config.DO_SPACES_BUCKET || 'gradientai-kb';
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -862,6 +893,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });
@@ -920,6 +954,9 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      if (!globalOptions.dryRun) {
+        await endCommandSessionWithFailure(finalBucket, error);
+      }
       process.exit(1);
     }
   });

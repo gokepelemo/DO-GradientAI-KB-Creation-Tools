@@ -93,6 +93,25 @@ async function endCommandSession(bucketName) {
   currentCommandSession = null;
 }
 
+/**
+ * End the current command session with failure and log the error
+ */
+async function endCommandSessionWithFailure(bucketName, error) {
+  if (currentCommandSession) {
+    const { operationDetails, uploads, totalSizeBytes, uploadHash } = currentCommandSession;
+
+    await logFailedOperation({
+      ...operationDetails,
+      uploadHash,
+      documentsProcessed: uploads.map(u => u.fileName),
+      totalSizeBytes,
+      error: error.message || error.toString()
+    }, bucketName);
+  }
+
+  currentCommandSession = null;
+}
+
 // Configure S3 client for both AWS S3 and DigitalOcean Spaces
 const s3ClientConfig = {
   region: process.env.AWS_BUCKET_REGION || process.env.SPACES_REGION || "us-east-1",
@@ -265,13 +284,56 @@ async function logOperation(operationDetails, bucketName) {
   return finalOperationId;
 }
 
+/**
+ * Log a failed KB creation operation
+ */
+async function logFailedOperation(operationDetails, bucketName) {
+  const {
+    operationId,
+    uploadHash,
+    sourceType,
+    documentsProcessed = [],
+    totalSizeBytes = 0,
+    error,
+    customId
+  } = operationDetails;
+
+  const finalOperationId = operationId || customId || generateOperationId(operationDetails);
+
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    username: process.env.USER || process.env.USERNAME || 'unknown',
+    operationId: finalOperationId,
+    uploadHash,
+    sourceType,
+    status: 'failed',
+    error: error,
+    documentsProcessed: documentsProcessed.length,
+    documentDetails: documentsProcessed,
+    totalSizeBytes,
+    totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2)
+  };
+
+  const logLine = JSON.stringify(logEntry) + '\n';
+
+  // Write to both local and bucket logs
+  await Promise.all([
+    writeLocalLog(logLine),
+    writeBucketLog(bucketName, logLine)
+  ]);
+
+  return finalOperationId;
+}
+
 export {
   logOperation,
+  logFailedOperation,
   generateOperationId,
   generateUploadHash,
   startCommandSession,
   recordSuccessfulUpload,
   endCommandSession,
+  endCommandSessionWithFailure,
   getCurrentOperationId,
   getCurrentUploadHash,
   LOCAL_LOG_DIR,
