@@ -50,7 +50,7 @@
     "intercom-client": "^6.4.0",
     "mammoth": "^1.6.0",
     "node-fetch": "^3.3.2",
-    "ora": "^9.0.0",
+    "ora": "^8.2.0",
     "pdf-parse": "^1.1.1",
     "puppeteer": "^24.22.3",
     "rss-parser": "^3.13.0",

@@ -1,7 +1,7 @@
 # KB Tools
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 
 CLI tools for creating knowledge bases for DigitalOcean GradientAI
 
@@ -151,7 +151,7 @@ GPL-2.0 - See [LICENSE](LICENSE) file for details.
 ### Common Issues
 
 #### "chalk is not defined"
-- Ensure Node.js v16+ is installed
+- Ensure Node.js v18+ is installed
 - Run: `nvm use node`
 
 #### API Authentication Errors
