@@ -175,7 +175,7 @@ program
         startCommandSession({
           sourceType: 'stdin',
           outputFileName: outputFile
-        });
+        }, globalOptions.operationId, globalOptions.uploadHash);
 
         await processStdinUpload(outputFile, finalBucket, globalOptions.dryRun);
 
@@ -208,7 +208,9 @@ program
   .option('--gradientai-token <token>', 'DigitalOcean Access Token for GradientAI')
   .option('--knowledge-base-uuid <uuid>', 'GradientAI Knowledge Base UUID for indexing')
   .option('--data-source-uuids <uuids>', 'GradientAI Data Source UUIDs (comma-separated) for indexing')
-  .option('--auto-index', 'Automatically create indexing job after successful upload');
+  .option('--auto-index', 'Automatically create indexing job after successful upload')
+  .option('--operation-id <id>', 'Specific operation ID for sys admin updates (hidden)', { hidden: true })
+  .option('--upload-hash <hash>', 'Specific upload hash for sys admin updates (hidden)', { hidden: true });
 
 // Extract links command
 program
@@ -259,7 +261,7 @@ program
         outputFileName: outputFile,
         selector,
         selectorType
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       const links = await extractLinks(url, selector, selectorType);
       const content = links.join('\n');
@@ -338,7 +340,7 @@ program
         sourceType: 'webpage',
         selector,
         selectorType
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processDoc(url, selector, selectorType, finalBucket, globalOptions.dryRun);
 
@@ -401,7 +403,7 @@ program
         filePath,
         selector,
         selectorType
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processUrls(filePath, selector, selectorType, finalBucket, globalOptions.dryRun);
 
@@ -462,7 +464,7 @@ program
       startCommandSession({
         url: `https://github.com/${owner}/${repo}`,
         sourceType: 'github'
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await crawlGitHubRepo(owner, repo, finalBucket, globalOptions.dryRun);
 
@@ -522,7 +524,7 @@ program
       // Start logging session
       startCommandSession({
         sourceType: 'intercom'
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await getIntercomArticles(finalBucket, globalOptions.dryRun);
 
@@ -583,7 +585,7 @@ program
       startCommandSession({
         sourceType: 'reddit',
         query
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processRedditPosts(query, finalBucket, globalOptions.dryRun);
 
@@ -644,7 +646,7 @@ program
       startCommandSession({
         sourceType: 'stackoverflow',
         query
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await searchStackOverflow(query, finalBucket, globalOptions.dryRun);
 
@@ -705,7 +707,7 @@ program
       startCommandSession({
         filePath,
         sourceType: 'document'
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processDocument(filePath, finalBucket, globalOptions.dryRun);
 
@@ -766,7 +768,7 @@ program
         sourceType: 'parsesitemap',
         url,
         outputFileName: outputFile
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       // This would need implementation - parseSitemap currently takes content, not URL
       console.log(chalk.yellow('parsesitemap command needs URL-based implementation'));
@@ -889,7 +891,7 @@ program
         sourceType: 'llms',
         url,
         outputFileName: outputFile
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processLLMsTxt(url, outputFile, finalBucket, globalOptions.dryRun);
 
@@ -950,7 +952,7 @@ program
       startCommandSession({
         sourceType: 'pipestdin',
         outputFileName: outputFile
-      });
+      }, globalOptions.operationId, globalOptions.uploadHash);
 
       await processStdinUpload(outputFile, finalBucket, globalOptions.dryRun);
 

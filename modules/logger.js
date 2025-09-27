@@ -30,9 +30,9 @@ function generateUploadHash() {
 /**
  * Start a new command logging session
  */
-function startCommandSession(operationDetails) {
-  const operationId = generateOperationId(operationDetails);
-  const uploadHash = generateUploadHash();
+function startCommandSession(operationDetails, providedOperationId = null, providedUploadHash = null) {
+  const operationId = providedOperationId || generateOperationId(operationDetails);
+  const uploadHash = providedUploadHash || generateUploadHash();
   currentCommandSession = {
     operationDetails: {
       ...operationDetails,
