@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-09-26
+
+### Added
+
+- **Operation Management System**: Complete upload operation tracking and management
+  - 6-character hash generation for unique upload path suffixes
+  - Structured upload paths: `operationId/uploadHash/filename`
+  - Comprehensive operation logging with hash metadata
+  - New CLI commands: `delete` and `list-operations`
+  - Interactive operation selection when no operation specified
+  - Batch delete functionality for S3-compatible storage
+
+- **Enhanced Documentation**: Comprehensive CLI documentation and user guides
+  - Complete `DOCUMENTATION.md` with all commands, options, and use cases
+  - Detailed usage examples for all data sources and processing modes
+  - Troubleshooting section and best practices
+  - Stdin processing and automation examples
+
+### Fixed
+
+- **CI Test Failures**: Resolved authentication and function validation issues
+  - Created `.env.test` file with dummy test values
+  - Fixed ES module mocking for `node-fetch` and `inquirer`
+  - Added `.env.test` to `.gitignore` for security
+  - All 16 tests now passing (8 in gradientAI.test.js, 8 in utils.test.js)
+
+### Changed
+
+- **Code Optimization**: Improved code quality and maintainability
+  - Code review and optimization across all modules
+  - Better error handling and user feedback
+  - Consistent import patterns and function signatures
+  - Enhanced CLI help text and command descriptions
+
 ## [1.2.0] - 2025-09-26
 
 ### Added

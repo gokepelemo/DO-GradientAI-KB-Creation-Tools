@@ -9,6 +9,12 @@ export async function processBatch(configPath, dryRun = false) {
   }
 
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+
+  // Validate that this is a kbcreationtools config file
+  if (!config.kbcreationtools || typeof config.kbcreationtools !== 'string') {
+    throw new Error('Invalid configuration file: missing or invalid "kbcreationtools" key. This does not appear to be a kbcreationtools configuration file. Expected format: {"kbcreationtools": "version"}');
+  }
+
   const results = {
     processed: [],
     failed: [],

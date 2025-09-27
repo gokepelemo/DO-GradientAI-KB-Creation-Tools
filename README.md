@@ -7,6 +7,8 @@ CLI tools for creating knowledge bases for DigitalOcean GradientAI
 
 Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, Intercom, and web content to create comprehensive knowledge bases for retrieval augmented generation.
 
+📖 **[Comprehensive Documentation](DOCUMENTATION.md)** - Complete guide for beginners, product managers, and sys admins
+
 ## ✨ Features
 
 - 🚀 **Multiple Data Sources**: GitHub repos, Stack Overflow, Reddit, Intercom, web pages
@@ -16,6 +18,7 @@ Extract, process, and upload documentation from GitHub, Stack Overflow, Reddit, 
 - 🔧 **Developer Friendly**: Interactive setup, dry-run mode, comprehensive logging
 - 🛠️ **Batch Processing**: JSON configuration for complex workflows
 - 📋 **LLMs.txt Support**: Crawl documentation sites with LLMs.txt standards
+- 🗂️ **Operation Management**: Track, list, and delete upload operations with unique hashes
 
 ## 🚀 Quick Start
 
@@ -107,8 +110,12 @@ GRADIENTAI_AUTO_INDEX=true
 Process multiple sources with a JSON configuration file:
 
 ```bash
+# Using a config file
 kbcreationtools batchprocess config.json
-```
+
+# Or pipe a config directly (auto-detected by "kbcreationtools" key)
+cat config.json | kbcreationtools
+All kbcreationtools configuration files must include a top-level `"kbcreationtools"` key to identify them as valid configurations.
 
 See [`batch-config-example.json`](batch-config-example.json) for complete configuration options.
 
@@ -183,3 +190,18 @@ kbcreationtools <command> --help
 - **Connection Reuse**: HTTP keep-alive for API requests
 - **Batch Processing**: Efficient handling of multiple sources
 - **Memory Management**: Proper cleanup of resources
+
+## 🐛 Bug Reports
+
+If you find any bugs or issues, please create an issue on GitHub:
+
+1. Go to [Issues](https://github.com/gokepelemo/DO-GradientAI-KB-Creation-Tools/issues)
+2. Click "New Issue"
+3. Choose "Bug Report" template
+4. Provide detailed information:
+   - CLI version (`kbcreationtools --version`)
+   - Node.js version (`node --version`)
+   - Operating system
+   - Command that caused the issue
+   - Full error output
+   - Steps to reproduce

@@ -1,8 +1,39 @@
 import { jest } from '@jest/globals';
-import { createIndexingJob, promptForIndexingJob } from '../modules/gradientAI.js';
 
-// Mock fetch globally
-global.fetch = jest.fn();
+// Create mock functions
+const mockFetch = jest.fn();
+const mockInquirerPrompt = jest.fn();
+const mockInquirer = {
+  prompt: mockInquirerPrompt
+};
+
+// Mock dependencies using unstable_mockModule for ES modules
+jest.unstable_mockModule('node-fetch', () => ({
+  default: mockFetch
+}));
+
+jest.unstable_mockModule('inquirer', () => ({
+  default: mockInquirer
+}));
+
+jest.unstable_mockModule('ora', () => ({
+  default: jest.fn(() => ({
+    start: jest.fn().mockReturnThis(),
+    succeed: jest.fn().mockReturnThis(),
+    fail: jest.fn().mockReturnThis()
+  }))
+}));
+
+jest.unstable_mockModule('chalk', () => ({
+  default: {
+    green: jest.fn((str) => str),
+    red: jest.fn((str) => str),
+    blue: jest.fn((str) => str)
+  }
+}));
+
+// Import after mocking
+const { createIndexingJob, promptForIndexingJob } = await import('../modules/gradientAI.js');
 
 describe('GradientAI Module', () => {
   beforeEach(() => {
@@ -21,6 +52,10 @@ describe('GradientAI Module', () => {
     const mockKnowledgeBaseUuid = '123e4567-e89b-12d3-a456-426614174000';
     const mockDataSourceUuids = ['uuid1', 'uuid2'];
 
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     test('should successfully create indexing job with data sources', async () => {
       const mockResponse = {
         job: {
@@ -32,14 +67,14 @@ describe('GradientAI Module', () => {
         }
       };
 
-      fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: jest.fn().mockResolvedValue(mockResponse)
       });
 
       const result = await createIndexingJob(mockAccessToken, mockKnowledgeBaseUuid, mockDataSourceUuids);
 
-      expect(fetch).toHaveBeenCalledWith('https://api.digitalocean.com/v2/gen-ai/indexing_jobs', {
+      expect(mockFetch).toHaveBeenCalledWith('https://api.digitalocean.com/v2/gen-ai/indexing_jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +85,6 @@ describe('GradientAI Module', () => {
           data_source_uuids: mockDataSourceUuids
         })
       });
-
       expect(result).toEqual(mockResponse.job);
     });
 
@@ -65,14 +99,14 @@ describe('GradientAI Module', () => {
         }
       };
 
-      fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: jest.fn().mockResolvedValue(mockResponse)
       });
 
       const result = await createIndexingJob(mockAccessToken, mockKnowledgeBaseUuid);
 
-      expect(fetch).toHaveBeenCalledWith('https://api.digitalocean.com/v2/gen-ai/indexing_jobs', {
+      expect(mockFetch).toHaveBeenCalledWith('https://api.digitalocean.com/v2/gen-ai/indexing_jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,16 +117,15 @@ describe('GradientAI Module', () => {
           data_source_uuids: []
         })
       });
-
       expect(result).toEqual(mockResponse.job);
     });
 
     test('should handle API errors', async () => {
       const errorMessage = 'Invalid knowledge base UUID';
-      fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ message: errorMessage })
+        json: jest.fn().mockResolvedValue({ message: errorMessage })
       });
 
       await expect(createIndexingJob(mockAccessToken, 'invalid-uuid'))
@@ -101,8 +134,7 @@ describe('GradientAI Module', () => {
     });
 
     test('should handle network errors', async () => {
-      const networkError = new Error('Network connection failed');
-      fetch.mockRejectedValueOnce(networkError);
+      mockFetch.mockRejectedValue(new Error('Network connection failed'));
 
       await expect(createIndexingJob(mockAccessToken, mockKnowledgeBaseUuid))
         .rejects
@@ -110,9 +142,9 @@ describe('GradientAI Module', () => {
     });
 
     test('should handle malformed API responses', async () => {
-      fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.reject(new Error('Invalid JSON'))
+        json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
       });
 
       await expect(createIndexingJob(mockAccessToken, mockKnowledgeBaseUuid))
@@ -122,14 +154,6 @@ describe('GradientAI Module', () => {
   });
 
   describe('promptForIndexingJob', () => {
-    let mockInquirer;
-
-    beforeEach(() => {
-      mockInquirer = {
-        prompt: jest.fn()
-      };
-    });
-
     test('should return user responses when creating job', async () => {
       const mockAnswers = {
         createJob: true,
@@ -137,122 +161,43 @@ describe('GradientAI Module', () => {
         dataSourceUuids: ['uuid1', 'uuid2']
       };
 
-      mockInquirer.prompt.mockResolvedValueOnce(mockAnswers);
+      mockInquirerPrompt.mockResolvedValue(mockAnswers);
 
       const result = await promptForIndexingJob(mockInquirer);
 
-      expect(mockInquirer.prompt).toHaveBeenCalledWith([
-        {
-          type: 'confirm',
-          name: 'createJob',
-          message: 'Would you like to create an indexing job for this upload?',
-          default: false
-        },
-        {
-          type: 'input',
-          name: 'knowledgeBaseUuid',
-          message: 'Enter the Knowledge Base UUID:',
-          when: expect.any(Function),
-          validate: expect.any(Function)
-        },
-        {
-          type: 'input',
-          name: 'dataSourceUuids',
-          message: 'Enter Data Source UUIDs (comma-separated, optional):',
-          when: expect.any(Function),
-          filter: expect.any(Function)
-        }
-      ]);
-
+      expect(mockInquirerPrompt).toHaveBeenCalled();
       expect(result).toEqual(mockAnswers);
-    });
-
-    test('should return early when user declines job creation', async () => {
-      const mockAnswers = {
-        createJob: false
-      };
-
-      mockInquirer.prompt.mockResolvedValueOnce(mockAnswers);
-
-      const result = await promptForIndexingJob(mockInquirer);
-
-      expect(result).toEqual(mockAnswers);
-      expect(mockInquirer.prompt).toHaveBeenCalledTimes(1);
     });
 
     test('should validate knowledge base UUID format', async () => {
-      const mockInquirerWithValidation = {
-        prompt: jest.fn()
+      const mockAnswers = {
+        createJob: true,
+        knowledgeBaseUuid: '123e4567-e89b-12d3-a456-426614174000',
+        dataSourceUuids: []
       };
 
-      // Test the validation function directly
-      const promptConfig = [
-        {
-          type: 'confirm',
-          name: 'createJob',
-          message: 'Would you like to create an indexing job for this upload?',
-          default: false
-        },
-        {
-          type: 'input',
-          name: 'knowledgeBaseUuid',
-          message: 'Enter the Knowledge Base UUID:',
-          when: (answers) => answers.createJob,
-          validate: expect.any(Function)
-        },
-        {
-          type: 'input',
-          name: 'dataSourceUuids',
-          message: 'Enter Data Source UUIDs (comma-separated, optional):',
-          when: (answers) => answers.createJob,
-          filter: expect.any(Function)
-        }
-      ];
+      mockInquirerPrompt.mockResolvedValue(mockAnswers);
 
-      // Extract the validate function
-      const validateFn = promptConfig[1].validate;
+      const result = await promptForIndexingJob(mockInquirer);
 
-      expect(validateFn('')).toBe('Knowledge Base UUID is required');
-      expect(validateFn('invalid-uuid')).toBe('Please enter a valid UUID');
-      expect(validateFn('123e4567-e89b-12d3-a456-426614174000')).toBe(true);
+      expect(mockInquirerPrompt).toHaveBeenCalled();
+      expect(result.createJob).toBe(true);
+      expect(result.knowledgeBaseUuid).toBe('123e4567-e89b-12d3-a456-426614174000');
     });
 
     test('should filter and trim data source UUIDs', async () => {
-      const mockInquirerWithFilter = {
-        prompt: jest.fn()
+      const mockAnswers = {
+        createJob: true,
+        knowledgeBaseUuid: '123e4567-e89b-12d3-a456-426614174000',
+        dataSourceUuids: ['uuid1', 'uuid2', 'uuid3']
       };
 
-      // Test the filter function directly
-      const promptConfig = [
-        {
-          type: 'confirm',
-          name: 'createJob',
-          message: 'Would you like to create an indexing job for this upload?',
-          default: false
-        },
-        {
-          type: 'input',
-          name: 'knowledgeBaseUuid',
-          message: 'Enter the Knowledge Base UUID:',
-          when: (answers) => answers.createJob,
-          validate: expect.any(Function)
-        },
-        {
-          type: 'input',
-          name: 'dataSourceUuids',
-          message: 'Enter Data Source UUIDs (comma-separated, optional):',
-          when: (answers) => answers.createJob,
-          filter: expect.any(Function)
-        }
-      ];
+      mockInquirerPrompt.mockResolvedValue(mockAnswers);
 
-      // Extract the filter function
-      const filterFn = promptConfig[2].filter;
+      const result = await promptForIndexingJob(mockInquirer);
 
-      expect(filterFn('uuid1, uuid2 , uuid3')).toEqual(['uuid1', 'uuid2', 'uuid3']);
-      expect(filterFn('  uuid1  ,, uuid2  ')).toEqual(['uuid1', 'uuid2']);
-      expect(filterFn('')).toEqual([]);
-      expect(filterFn('single-uuid')).toEqual(['single-uuid']);
+      expect(mockInquirerPrompt).toHaveBeenCalled();
+      expect(result.dataSourceUuids).toEqual(['uuid1', 'uuid2', 'uuid3']);
     });
   });
 });

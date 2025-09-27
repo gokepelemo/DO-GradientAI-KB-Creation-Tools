@@ -74,7 +74,7 @@ if (process.argv[1] === __filename) {
     }
 
     if (dryRun) {
-      console.log(chalk.blue(`[DRY RUN] Would save ${links.length} links to ${outputFile}`));
+      console.log(chalk.blue(`[DRY RUN] Will save ${links.length} links to ${outputFile}`));
       console.log(chalk.blue(`[DRY RUN] First few links: ${links.slice(0, 3).join(', ')}...`));
     } else {
       fs.writeFileSync(outputFile, links.join("\n"), "utf-8");

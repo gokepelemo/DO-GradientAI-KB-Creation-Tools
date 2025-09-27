@@ -71,7 +71,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     const urls = await parseSitemap(content);
     if (dryRun) {
-      console.log(chalk.blue(`[DRY RUN] Would save ${urls.length} URLs to ${outputFile}`));
+      console.log(chalk.blue(`[DRY RUN] Will save ${urls.length} URLs to ${outputFile}`));
       console.log(chalk.blue(`[DRY RUN] First few URLs: ${urls.slice(0, 3).join(', ')}...`));
     } else {
       saveToFile(urls, outputFile);

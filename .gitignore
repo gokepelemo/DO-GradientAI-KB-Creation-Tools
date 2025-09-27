@@ -10,6 +10,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.test
 
 # Build outputs
 dist/
@@ -71,6 +72,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+output.*
+*.log
+log
 
 # Release script
 release.sh
