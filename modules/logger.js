@@ -322,11 +322,8 @@ async function logFailedOperation(operationDetails, bucketName) {
 
   const logLine = JSON.stringify(logEntry) + '\n';
 
-  // Write to both local and bucket logs
-  await Promise.all([
-    writeLocalLog(logLine),
-    writeBucketLog(bucketName, logLine)
-  ]);
+  // Write only to local log for failed operations
+  await writeLocalLog(logLine);
 
   return finalOperationId;
 }

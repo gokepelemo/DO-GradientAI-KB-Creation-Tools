@@ -377,8 +377,10 @@ administrators to monitor, manage, and troubleshoot content ingestion operations
 
 Operations are logged to two locations for redundancy and accessibility:
 
-- **Bucket Logs**: Stored in your cloud storage bucket at `.kbcreationtools/log`
-- **Local Logs**: Stored on the local machine at `~/.kbcreationtools/log`
+- **Bucket Logs**: Successful operations stored in your cloud storage bucket at `.kbcreationtools/log`
+- **Local Logs**: All operations (successful and failed) stored on the local machine at `~/.kbcreationtools/log`
+
+**Note**: Failed operations are logged locally only to avoid cluttering cloud storage with error entries.
 
 ### 📋 **Log Contents**
 
