@@ -112,11 +112,14 @@ GRADIENTAI_AUTO_INDEX=true
 Process multiple sources with a JSON configuration file:
 
 ```bash
+```bash
 # Using a config file
 kbcreationtools batchprocess config.json
 
 # Or pipe a config directly (auto-detected by "kbcreationtools" key)
 cat config.json | kbcreationtools
+```
+
 All kbcreationtools configuration files must include a top-level `"kbcreationtools"` key to identify them as valid configurations.
 
 See [`batch-config-example.json`](batch-config-example.json) for complete configuration options.
