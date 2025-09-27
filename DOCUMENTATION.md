@@ -440,17 +440,94 @@ kbcreationtools list-operations --bucket my-bucket
 
 ### 🗑️ **Deleting Operations Before Updates**
 
-Before uploading new versions of content, parse the log file to identify and remove previous operations:
+Before uploading new versions of content, parse the log file to identify and remove previous
+operations. Each operation has a unique `operationId` and `uploadHash` for precise targeting.
 
 ```bash
-# 1. List operations to find the operation ID
+# 1. List operations to find the operation ID and upload hash
 kbcreationtools list-operations
 
-# 2. Delete specific operation before re-uploading
+# 2. Delete specific operation (removes all uploads for that operation)
 kbcreationtools delete microsoft-vscode
 
-# 3. Re-run the operation with updated content
+# 3. Delete specific upload hash within an operation (more precise)
+kbcreationtools delete microsoft-vscode/a1b2c3d4
+
+# 4. Re-run the operation with updated content
 kbcreationtools github microsoft vscode
+```
+
+#### **Automated Cleanup with jq**
+
+Use `jq` to parse logs and automate cleanup in cron scripts:
+
+```bash
+#!/bin/bash
+# Cron script: Clean up old GitHub repo operations before weekly updates
+
+# Find operations older than 7 days for a specific repo
+OLD_OPERATIONS=$(jq -r 'select(.sourceType == "github" and (.operationParams.url // "" | \
+contains("microsoft/vscode"))) | select((now - (.timestamp | fromdate)) > (7 * 24 * 60 * 60)) | \
+.operationId' ~/.kbcreationtools/log)
+
+# Delete old operations
+for op in $OLD_OPERATIONS; do
+  echo "Deleting old operation: $op"
+  kbcreationtools delete "$op"
+done
+
+# Re-run the operation with fresh content
+kbcreationtools github microsoft vscode
+```
+
+#### **Extract Operation Details with jq**
+
+Parse logs to extract specific operation parameters for reuse:
+
+```bash
+# Get the latest operation ID for a specific source
+LATEST_OP=$(jq -r 'select(.sourceType == "github" and (.operationParams.url // "" | \
+contains("microsoft/vscode"))) | select(.status != "failed") | .operationId' ~/.kbcreationtools/log | tail -1)
+
+# Get operation parameters as shell variables
+OP_DETAILS=$(jq -r 'select(.operationId == "'$LATEST_OP'") | {operationId, uploadHash, sourceType, \
+url: .operationParams.url}' ~/.kbcreationtools/log | tail -1)
+
+# Extract individual values
+OP_ID=$(echo "$OP_DETAILS" | jq -r '.operationId')
+UPLOAD_HASH=$(echo "$OP_DETAILS" | jq -r '.uploadHash')
+SOURCE_URL=$(echo "$OP_DETAILS" | jq -r '.url')
+
+echo "Latest operation: $OP_ID (hash: $UPLOAD_HASH) from $SOURCE_URL"
+```
+
+#### **Advanced jq Use Cases**
+
+```bash
+# Find failed operations for retry
+FAILED_OPS=$(jq -r 'select(.status == "failed") | \
+  select(.timestamp | fromdate > (now - 86400)) | .operationId' ~/.kbcreationtools/log)
+
+# Get operations by source type with document counts
+OP_STATS=$(jq -r 'select(.status != "failed") | \
+  "\(.sourceType): \(.documentsProcessed) docs, \(.totalSizeMB)MB"' ~/.kbcreationtools/log | sort | uniq -c)
+
+# Find operations that processed specific files
+DOC_OPS=$(jq -r 'select(.documentDetails[] | contains("README.md")) | \
+  .operationId' ~/.kbcreationtools/log)
+
+# Extract URLs from webpage operations for re-crawling
+WEB_URLS=$(jq -r 'select(.sourceType == "webpage") | .operationParams.url' \
+  ~/.kbcreationtools/log | sort | uniq)
+
+# Monitor operation success rate
+SUCCESS_RATE=$(jq -r 'select(.timestamp | fromdate > (now - 604800)) | \
+  if .status == "failed" then 0 else 1 end' ~/.kbcreationtools/log | \
+  awk '{sum+=$1; count++} END {print sum/count*100 "% success rate"}')
+
+# Get largest operations by size
+LARGE_OPS=$(jq -r 'select(.totalSizeBytes > 1000000) | \
+  "\(.operationId): \(.totalSizeMB)MB"' ~/.kbcreationtools/log | sort -k2 -n -r | head -5)
 ```
 
 ### 📤 **Log Forwarding**
