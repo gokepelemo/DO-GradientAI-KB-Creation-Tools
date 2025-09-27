@@ -81,7 +81,7 @@ const program = new Command();
 program
   .name('kbcreationtools')
   .description('Tools for creating knowledge bases for DigitalOcean GradientAI. Default behavior: process piped stdin to output file.')
-  .version('1.1.0')
+  .version('1.2.0')
   .argument('[outputFile]', 'Output file for piped stdin processing (default behavior)')
   .argument('[bucket]', 'Spaces/S3 bucket name (optional, overrides DO_SPACES_BUCKET env var)')
   .option('--github-token <token>', 'GitHub Personal Access Token (with repo access)')
